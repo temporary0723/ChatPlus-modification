@@ -496,13 +496,34 @@ function createCharacterChatElement(characterId, chat) {
     
     // Make it clickable to load the chat
     chatBlock.addEventListener('click', () => {
-        // Use SillyTavern's existing chat loading mechanism
-        const context = SillyTavern.getContext();
-        if (context.selectCharacterById) {
-            context.selectCharacterById(characterId);
+        console.log('ChatPlus: Chat clicked:', chat.file_name);
+        
+        try {
+            // Use SillyTavern's existing chat loading mechanism
+            const context = SillyTavern.getContext();
+            if (context.selectCharacterById) {
+                context.selectCharacterById(characterId);
+            }
+            
+            // Load the specific chat
+            if (window.loadFileToChat) {
+                window.loadFileToChat(chat.file_name);
+            }
+            
+            // Close the modal
+            const modal = document.getElementById('shadow_select_chat_popup');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            
+            // Also try clicking the close button
+            const closeBtn = document.getElementById('select_chat_cross');
+            if (closeBtn) {
+                closeBtn.click();
+            }
+        } catch (error) {
+            console.error('ChatPlus: Error loading chat:', error);
         }
-        // Close the modal and load the chat
-        $('#select_chat_div').closest('.popup').find('.popup_button_ok').click();
     });
     
     const nameWrapper = document.createElement('div');
@@ -671,9 +692,14 @@ async function refreshCharacterChatModal(characterId) {
     if (isFolderView) {
         await renderCharacterFolderView(characterId);
     } else {
-        // Trigger the original displayPastChats to refresh list view
-        if (window.SillyTavern && window.SillyTavern.getContext().displayPastChats) {
-            window.SillyTavern.getContext().displayPastChats();
+        // Trigger displayPastChats to refresh list view
+        try {
+            const context = SillyTavern?.getContext();
+            if (context && context.displayPastChats) {
+                await context.displayPastChats();
+            }
+        } catch (error) {
+            console.error('ChatPlus: Error refreshing chat modal:', error);
         }
     }
 }
@@ -3579,58 +3605,91 @@ function handleCharacterPageLoaded() {
 // Character Chat Modal Folder Integration
 // =========================
 
-// Hook into SillyTavern's displayPastChats function to add folder view toggle
+// Hook into SillyTavern's chat modal to add folder view toggle
 (() => {
-    // Store the original function
-    let originalDisplayPastChats = null;
+    console.log('ChatPlus: Initializing character folder integration');
     
-    // Wait for SillyTavern to be ready
-    const initializeCharacterFolderIntegration = () => {
-        const context = SillyTavern?.getContext();
-        if (context && context.displayPastChats && !originalDisplayPastChats) {
-            // Store the original function
-            originalDisplayPastChats = context.displayPastChats;
-            
-            // Replace with our enhanced version
-            context.displayPastChats = async function() {
-                // Call the original function first
-                await originalDisplayPastChats.call(this);
+    // Use MutationObserver to detect when chat modal appears
+    const observeForChatModal = () => {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    const target = mutation.target;
+                    if (target.id === 'shadow_select_chat_popup') {
+                        const displayStyle = target.style.display;
+                        if (displayStyle === 'block' || displayStyle === '') {
+                            console.log('ChatPlus: Chat modal detected as visible');
+                            setTimeout(() => {
+                                addCharacterFolderViewToggle();
+                            }, 200);
+                        }
+                    }
+                }
                 
-                // Add our folder view toggle after a short delay to ensure DOM is ready
-                setTimeout(() => {
-                    addCharacterFolderViewToggle();
-                }, 100);
-            };
-            
-            console.log('ChatPlus: Character folder integration initialized');
-        }
+                // Also check for added nodes
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            if (node.id === 'shadow_select_chat_popup' || 
+                                node.querySelector && node.querySelector('#shadow_select_chat_popup')) {
+                                console.log('ChatPlus: Chat modal element added to DOM');
+                                setTimeout(() => {
+                                    addCharacterFolderViewToggle();
+                                }, 200);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Start observing
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style']
+        });
+        
+        console.log('ChatPlus: MutationObserver started');
     };
     
-    // Try to initialize immediately
-    initializeCharacterFolderIntegration();
-    
-    // Also try again after a delay in case SillyTavern isn't ready yet
-    setTimeout(initializeCharacterFolderIntegration, 1000);
-    
-    // And listen for any potential load events
-    if (typeof eventSource !== 'undefined' && eventSource.on) {
-        eventSource.on('displayPastChats', () => {
-            setTimeout(() => {
-                addCharacterFolderViewToggle();
-            }, 100);
-        });
+    // Start observing when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', observeForChatModal);
+    } else {
+        observeForChatModal();
     }
+    
+    // Also try to add toggle if modal is already visible
+    setTimeout(() => {
+        const modal = document.getElementById('shadow_select_chat_popup');
+        if (modal && modal.style.display === 'block') {
+            console.log('ChatPlus: Chat modal already visible on startup');
+            addCharacterFolderViewToggle();
+        }
+    }, 1000);
 })();
 
 /**
  * Add folder view toggle to the character chat modal.
  */
 function addCharacterFolderViewToggle() {
-    const searchContainer = document.querySelector('#select_chat_popup .popup_text_input_wrapper');
-    if (!searchContainer) return;
+    console.log('ChatPlus: addCharacterFolderViewToggle called');
+    
+    const header = document.querySelector('div[name="selectChatPopupHeader"]');
+    console.log('ChatPlus: Found header element:', header);
+    
+    if (!header) {
+        console.log('ChatPlus: Header not found, cannot add toggle');
+        return;
+    }
     
     // Check if toggle already exists
-    if (document.getElementById('chatplus-character-view-toggle')) return;
+    if (document.getElementById('chatplus-character-view-toggle')) {
+        console.log('ChatPlus: Toggle already exists');
+        return;
+    }
     
     // Create view toggle container
     const toggleContainer = document.createElement('div');
@@ -3680,11 +3739,28 @@ function addCharacterFolderViewToggle() {
         localStorage.setItem('chatplus_character_view_mode', 'list');
         updateButtonStates('list');
         
-        // Trigger original displayPastChats
-        if (originalDisplayPastChats) {
-            await originalDisplayPastChats.call(SillyTavern.getContext());
+        // Trigger displayPastChats to refresh list view
+        try {
+            const context = SillyTavern?.getContext();
+            if (context && context.displayPastChats) {
+                await context.displayPastChats();
+            } else {
+                // Fallback: just reload the page content by clearing and letting it rebuild
+                const selectChatDiv = document.getElementById('select_chat_div');
+                if (selectChatDiv) {
+                    selectChatDiv.innerHTML = '<div style="text-align: center; padding: 20px;">Loading...</div>';
+                }
+                // Try to call displayPastChats after a delay
+                setTimeout(async () => {
+                    if (window.displayPastChats) {
+                        await window.displayPastChats();
+                    }
+                }, 100);
+            }
             // Re-add the toggle after refresh
             setTimeout(() => addCharacterFolderViewToggle(), 100);
+        } catch (error) {
+            console.error('ChatPlus: Error refreshing list view:', error);
         }
     });
     
@@ -3692,29 +3768,60 @@ function addCharacterFolderViewToggle() {
         localStorage.setItem('chatplus_character_view_mode', 'folder');
         updateButtonStates('folder');
         
-        // Get current character ID
-        const context = SillyTavern.getContext();
-        const currentCharacterId = context.this_chid;
+        // Get current character ID - try multiple methods
+        let currentCharacterId = getCurrentCharacterId();
+        console.log('ChatPlus: Current character ID:', currentCharacterId);
         
-        if (currentCharacterId !== undefined) {
+        if (currentCharacterId !== undefined && currentCharacterId !== null) {
             await renderCharacterFolderView(currentCharacterId);
             // Re-add the toggle after refresh
             setTimeout(() => addCharacterFolderViewToggle(), 100);
+        } else {
+            console.log('ChatPlus: No character ID found, cannot switch to folder view');
         }
     });
     
     toggleContainer.appendChild(listViewBtn);
     toggleContainer.appendChild(folderViewBtn);
     
-    // Insert after the search container
-    searchContainer.parentNode.insertBefore(toggleContainer, searchContainer.nextSibling);
+    // Insert after the header
+    header.parentNode.insertBefore(toggleContainer, header.nextSibling);
+    
+    console.log('ChatPlus: Toggle added successfully');
     
     // If we're already in folder mode, switch to it
     if (currentMode === 'folder') {
-        const context = SillyTavern.getContext();
-        const currentCharacterId = context.this_chid;
-        if (currentCharacterId !== undefined) {
+        const currentCharacterId = getCurrentCharacterId();
+        if (currentCharacterId !== undefined && currentCharacterId !== null) {
             setTimeout(() => renderCharacterFolderView(currentCharacterId), 200);
         }
+    }
+}
+
+/**
+ * Get the current character ID using multiple methods.
+ * @returns {string|undefined} The current character ID.
+ */
+function getCurrentCharacterId() {
+    // Try multiple ways to get the current character ID
+    try {
+        // Method 1: SillyTavern context
+        const context = SillyTavern?.getContext();
+        if (context?.this_chid !== undefined) {
+            return context.this_chid;
+        }
+        
+        // Method 2: Global variables
+        if (typeof this_chid !== 'undefined' && this_chid !== undefined) {
+            return this_chid;
+        }
+        
+        // Method 3: Check URL or other indicators
+        // This might be needed for some SillyTavern versions
+        
+        return undefined;
+    } catch (error) {
+        console.error('ChatPlus: Error getting character ID:', error);
+        return undefined;
     }
 }
