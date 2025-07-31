@@ -562,7 +562,21 @@ function createCharacterChatElement(characterId, chat) {
     if (chat.last_mes) {
         const dateSpan = document.createElement('small');
         dateSpan.className = 'chat_messages_date select_chat_block_filename_item';
-        dateSpan.textContent = timestampToMoment(chat.last_mes).format('lll');
+        
+        // Try to format date safely
+        try {
+            if (typeof timestampToMoment === 'function') {
+                dateSpan.textContent = timestampToMoment(chat.last_mes).format('lll');
+            } else {
+                // Fallback: use regular Date formatting
+                const date = new Date(chat.last_mes);
+                dateSpan.textContent = date.toLocaleString();
+            }
+        } catch (dateError) {
+            console.warn('ChatPlus: Could not format date:', dateError);
+            dateSpan.textContent = new Date(chat.last_mes || 0).toLocaleString();
+        }
+        
         chatInfo.appendChild(dateSpan);
     }
     
@@ -782,7 +796,24 @@ async function renderCharacterFolderView(characterId) {
             if (response.ok) {
                 characterChats = await response.json();
                 console.log('ChatPlus: Loaded', characterChats.length, 'chats');
-                characterChats.sort((a, b) => context.sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
+                
+                // Sort chats by timestamp (most recent first)
+                try {
+                    if (typeof context.sortMoments === 'function' && typeof timestampToMoment === 'function') {
+                        characterChats.sort((a, b) => context.sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
+                    } else {
+                        // Fallback: sort by timestamp directly
+                        characterChats.sort((a, b) => {
+                            const timeA = a.last_mes || 0;
+                            const timeB = b.last_mes || 0;
+                            return timeB - timeA; // Most recent first
+                        });
+                    }
+                    console.log('ChatPlus: Chats sorted successfully');
+                } catch (sortError) {
+                    console.warn('ChatPlus: Could not sort chats:', sortError);
+                    // Continue without sorting
+                }
             } else {
                 console.error('ChatPlus: Failed to fetch chats, status:', response.status);
             }
@@ -3865,132 +3896,38 @@ function addCharacterFolderViewToggle() {
 }
 
 /**
- * Get the current character ID using multiple methods.
+ * Get the current character ID using the working method.
  * @returns {string|undefined} The current character ID.
  */
 function getCurrentCharacterId() {
-    // Try multiple ways to get the current character ID
     try {
-        console.log('ChatPlus: Attempting to get character ID...');
-        
-        // Method 1: SillyTavern context
         const context = SillyTavern?.getContext();
-        console.log('ChatPlus: SillyTavern context:', context);
-        console.log('ChatPlus: context.this_chid:', context?.this_chid);
-        
-        if (context?.this_chid !== undefined && context?.this_chid !== null) {
-            console.log('ChatPlus: Found character ID via context:', context.this_chid);
-            return context.this_chid;
+        if (!context) {
+            console.log('ChatPlus: No SillyTavern context available');
+            return undefined;
         }
         
-        // Method 2: Global variables
-        if (typeof window.this_chid !== 'undefined' && window.this_chid !== undefined && window.this_chid !== null) {
-            console.log('ChatPlus: Found character ID via window.this_chid:', window.this_chid);
-            return window.this_chid;
+        // The working method: check context.characterId for array-based characters
+        if (context.characterId !== undefined && context.characterId !== null) {
+            console.log('ChatPlus: Found character ID:', context.characterId);
+            return context.characterId.toString();
         }
         
-        // Method 3: Try accessing global this_chid directly
-        try {
-            if (typeof this_chid !== 'undefined' && this_chid !== undefined && this_chid !== null) {
-                console.log('ChatPlus: Found character ID via global this_chid:', this_chid);
-                return this_chid;
-            }
-        } catch (e) {
-            // this_chid might not be accessible in this scope
+        // Fallback for older SillyTavern versions with this_chid
+        if (context.this_chid !== undefined && context.this_chid !== null) {
+            console.log('ChatPlus: Found character ID via this_chid:', context.this_chid);
+            return context.this_chid.toString();
         }
         
-        // Method 4: Check if characters is an array and find active character
-        if (context?.characters && Array.isArray(context.characters)) {
-            console.log('ChatPlus: Characters is an array with', context.characters.length, 'items');
-            
-            // Try to find active character by various indicators
-            
-            // 4a. Check DOM for character name
-            const charNameElement = document.getElementById('ChatHistoryCharName');
-            if (charNameElement && charNameElement.textContent) {
-                const charName = charNameElement.textContent.trim();
-                console.log('ChatPlus: Found character name in DOM:', charName);
-                
-                // Find character by name in array
-                const charIndex = context.characters.findIndex(char => char && char.name === charName);
-                if (charIndex !== -1) {
-                    console.log('ChatPlus: Found character ID by name match:', charIndex);
-                    return charIndex.toString();
-                }
-            }
-            
-            // 4b. Check if there's a currently selected character
-            if (context.characterId !== undefined && context.characterId !== null) {
-                console.log('ChatPlus: Found context.characterId:', context.characterId);
-                return context.characterId.toString();
-            }
-            
-            // 4c. Check chat metadata for character info
-            if (context?.chat && context.chat.length > 0) {
-                const lastMessage = context.chat[context.chat.length - 1];
-                console.log('ChatPlus: Last message:', lastMessage);
-                
-                // Try to extract character info from chat
-                if (lastMessage?.extra?.character_id !== undefined) {
-                    console.log('ChatPlus: Found character ID in chat metadata:', lastMessage.extra.character_id);
-                    return lastMessage.extra.character_id.toString();
-                }
-            }
-            
-            // 4d. Check for selected_button or similar indicators
-            const selectedButton = document.querySelector('.character_select.selected');
-            if (selectedButton) {
-                const chid = selectedButton.getAttribute('chid');
-                if (chid) {
-                    console.log('ChatPlus: Found character ID from selected button:', chid);
-                    return chid;
-                }
-            }
-        }
-        
-        // Method 5: Check DOM for character info (object-based characters)
-        const charNameElement = document.getElementById('ChatHistoryCharName');
-        if (charNameElement && charNameElement.textContent) {
-            console.log('ChatPlus: Found character name in DOM:', charNameElement.textContent);
-            // Try to find character by name
-            if (context?.characters && !Array.isArray(context.characters)) {
-                for (const [id, char] of Object.entries(context.characters)) {
-                    if (char.name === charNameElement.textContent.trim()) {
-                        console.log('ChatPlus: Found character ID by name match:', id);
-                        return id;
-                    }
-                }
-            }
-        }
-        
-        // Method 6: Check if we're in a group chat
-        if (context?.selected_group && context?.selected_group !== null) {
+        // Group chat support
+        if (context.selected_group !== undefined && context.selected_group !== null) {
             console.log('ChatPlus: Found group ID:', context.selected_group);
             return 'group_' + context.selected_group;
         }
         
-        // Method 7: Try to get character from current conversation
-        if (context?.name2 && context.characters) {
-            console.log('ChatPlus: Current character name from context.name2:', context.name2);
-            
-            if (Array.isArray(context.characters)) {
-                const charIndex = context.characters.findIndex(char => char && char.name === context.name2);
-                if (charIndex !== -1) {
-                    console.log('ChatPlus: Found character ID by name2 match:', charIndex);
-                    return charIndex.toString();
-                }
-            } else {
-                for (const [id, char] of Object.entries(context.characters)) {
-                    if (char.name === context.name2) {
-                        console.log('ChatPlus: Found character ID by name2 match:', id);
-                        return id;
-                    }
-                }
-            }
-        }
-        
-        console.log('ChatPlus: Could not find character ID with any method');
+        console.log('ChatPlus: No character ID found');
         return undefined;
+        
     } catch (error) {
         console.error('ChatPlus: Error getting character ID:', error);
         return undefined;
