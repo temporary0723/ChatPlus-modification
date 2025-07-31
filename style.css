@@ -577,6 +577,16 @@
     cursor: pointer;
 }
 
+/* Highlight current chat (same as SillyTavern) */
+.character-folders-container .select_chat_block[highlight] {
+    background-color: var(--cobalt30a) !important;
+}
+
+/* Fallback for older SillyTavern versions without CSS variables */
+.character-folders-container .select_chat_block[highlight] {
+    background-color: rgba(74, 158, 255, 0.3) !important;
+}
+
 .character-folders-container .fa-folder {
     color: #4a9eff;
     transition: color 0.2s;

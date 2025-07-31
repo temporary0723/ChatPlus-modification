@@ -590,6 +590,13 @@ function createCharacterChatElement(characterId, chat) {
     chatBlock.className = 'select_chat_block wide100p flex-container';
     chatBlock.setAttribute('file_name', chat.file_name);
     
+    // Check if this is the current chat and add highlight attribute (same as SillyTavern)
+    const currentChat = getCurrentChatName();
+    if (currentChat && trimChatExtension(currentChat) === trimChatExtension(chat.file_name)) {
+        chatBlock.setAttribute('highlight', 'true');
+        console.log('ChatPlus: Current chat highlighted in folder view:', chat.file_name);
+    }
+    
     // Make it clickable to load the chat
     chatBlock.addEventListener('click', () => {
         console.log('ChatPlus: Chat clicked:', chat.file_name);
@@ -4230,16 +4237,36 @@ function createListChatElement(chat, isSelected, character) {
 }
 
 /**
- * Get current chat name (if any).
- * @returns {string|null} Current chat name.
+ * Get current chat name (using SillyTavern's method).
+ * @returns {string|null} Current chat file name.
  */
 function getCurrentChatName() {
     try {
         const context = SillyTavern?.getContext();
-        return context?.currentChatName || context?.chat_name || null;
+        if (!context) return null;
+        
+        // Use the same logic as SillyTavern's getCurrentChatDetails
+        if (context.selected_group) {
+            const group = context.groups?.find(x => x.id === context.selected_group);
+            return group?.chat_id || null;
+        } else if (context.characters && context.this_chid !== undefined) {
+            return context.characters[context.this_chid]?.chat || null;
+        }
+        
+        return null;
     } catch (error) {
+        console.error('ChatPlus: Error getting current chat name:', error);
         return null;
     }
+}
+
+/**
+ * Trim file extension for comparison (same as SillyTavern).
+ * @param {string} fileName - File name to trim.
+ * @returns {string} Trimmed file name.
+ */
+function trimChatExtension(fileName) {
+    return String(fileName || '').replace('.jsonl', '');
 }
 
 /**
