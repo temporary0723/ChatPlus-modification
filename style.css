@@ -508,6 +508,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 6px 6px 0 0;
     transition: background-color 0.2s;
@@ -522,14 +523,40 @@
     border-top: 1px solid #444;
 }
 
+.character-folders-container .folder-title {
+    flex: 1;
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+.character-folders-container .folder-action-buttons {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
 .character-folders-container .folder-rename-icon {
     opacity: 0.7;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, color 0.2s;
+    border-radius: 3px;
 }
 
 .character-folders-container .folder-rename-icon:hover {
     opacity: 1;
     color: #4a9eff;
+    background: rgba(74, 158, 255, 0.1);
+}
+
+.character-folders-container .folder-delete-icon {
+    opacity: 0.7;
+    transition: opacity 0.2s, color 0.2s, background-color 0.2s;
+    border-radius: 3px;
+}
+
+.character-folders-container .folder-delete-icon:hover {
+    opacity: 1;
+    color: #ff4757;
+    background: rgba(255, 71, 87, 0.1);
 }
 
 .character-folders-container .select_chat_block_wrapper {

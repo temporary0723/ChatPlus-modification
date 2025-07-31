@@ -392,21 +392,42 @@ function renderCharacterChatFoldersUI(characterId, container, folderedChats, fol
         chevron.className = 'fa-solid chevron fa-chevron-down';
         header.appendChild(chevron);
         
+        const folderTitle = document.createElement('span');
+        folderTitle.className = 'folder-title';
+        folderTitle.textContent = folder.name;
+        folderTitle.style.flex = '1'; // Take up available space
+        folderTitle.style.marginLeft = '8px';
+        header.appendChild(folderTitle);
+        
+        // Create action buttons container
+        const actionButtons = document.createElement('div');
+        actionButtons.className = 'folder-action-buttons';
+        actionButtons.style.display = 'flex';
+        actionButtons.style.gap = '6px';
+        actionButtons.style.marginLeft = 'auto';
+        
         // Add pencil icon for renaming
         const pencilIcon = document.createElement('i');
         pencilIcon.className = 'fa-solid fa-pencil-alt folder-rename-icon';
         pencilIcon.style.cursor = 'pointer';
-        pencilIcon.style.margin = '0 6px 0 6px';
-        header.appendChild(pencilIcon);
+        pencilIcon.style.padding = '4px';
+        pencilIcon.title = 'Rename folder';
+        actionButtons.appendChild(pencilIcon);
         
-        const folderTitle = document.createElement('span');
-        folderTitle.className = 'folder-title';
-        folderTitle.textContent = folder.name;
-        header.appendChild(folderTitle);
+        // Add delete icon for deleting folder
+        const deleteIcon = document.createElement('i');
+        deleteIcon.className = 'fa-solid fa-trash folder-delete-icon';
+        deleteIcon.style.cursor = 'pointer';
+        deleteIcon.style.padding = '4px';
+        deleteIcon.style.color = '#ff6b6b';
+        deleteIcon.title = 'Delete folder';
+        actionButtons.appendChild(deleteIcon);
+        
+        header.appendChild(actionButtons);
         
         header.addEventListener('click', (e) => {
-            // Expand/collapse if clicking chevron or header (not pencil)
-            if (e.target === chevron || e.target === folderTitle || e.currentTarget === e.target) {
+            // Expand/collapse if clicking chevron or folder title (not action buttons)
+            if (e.target === chevron || e.target === folderTitle) {
                 folderSection.classList.toggle('collapsed');
                 content.classList.toggle('collapsed');
                 if (folderSection.classList.contains('collapsed')) {
@@ -422,41 +443,13 @@ function renderCharacterChatFoldersUI(characterId, container, folderedChats, fol
         // Rename folder functionality
         pencilIcon.addEventListener('click', async (e) => {
             e.stopPropagation();
-            const content = document.createElement('div');
-            content.innerHTML = `<h3>Rename folder</h3>`;
-            const nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.value = folder.name;
-            nameInput.style.width = '100%';
-            nameInput.style.marginTop = '8px';
-            nameInput.className = 'chatplus_menu_input';
-            content.appendChild(nameInput);
-            
-            const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
-                okButton: t`Rename`,
-                cancelButton: t`Cancel`,
-                wide: true
-            });
-            
-            nameInput.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    popup.okButton.click();
-                }
-            });
-            
-            const result = await popup.show();
-            if ((result === POPUP_RESULT.AFFIRMATIVE) && nameInput.value.trim() && nameInput.value.trim() !== folder.name) {
-                // Update folder name
-                const folders = getCharacterFolders(characterId);
-                const idx = folders.findIndex(f => f.id === folder.id);
-                if (idx !== -1) {
-                    folders[idx].name = nameInput.value.trim();
-                    setCharacterFolders(characterId, folders);
-                    // Refresh the character chat modal
-                    refreshCharacterChatModal(characterId);
-                }
-            }
+            await showRenameFolderPopup(characterId, folder);
+        });
+        
+        // Delete folder functionality
+        deleteIcon.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await showDeleteFolderPopup(characterId, folder);
         });
         
         const content = document.createElement('div');
@@ -478,6 +471,109 @@ function renderCharacterChatFoldersUI(characterId, container, folderedChats, fol
             renderCharacterChatFoldersUI(characterId, content, folderedChats, folder.children, level + 1);
         }
     });
+}
+
+/**
+ * Show rename folder popup.
+ * @param {string} characterId - Character ID.
+ * @param {Object} folder - Folder object.
+ */
+async function showRenameFolderPopup(characterId, folder) {
+    const content = document.createElement('div');
+    content.innerHTML = `<h3>Rename folder</h3>`;
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = folder.name;
+    nameInput.style.width = '100%';
+    nameInput.style.marginTop = '8px';
+    nameInput.className = 'chatplus_menu_input';
+    content.appendChild(nameInput);
+    
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        okButton: t`Rename`,
+        cancelButton: t`Cancel`,
+        wide: true
+    });
+    
+    nameInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            popup.okButton.click();
+        }
+    });
+    
+    const result = await popup.show();
+    if ((result === POPUP_RESULT.AFFIRMATIVE) && nameInput.value.trim() && nameInput.value.trim() !== folder.name) {
+        // Update folder name
+        const folders = getCharacterFolders(characterId);
+        const idx = folders.findIndex(f => f.id === folder.id);
+        if (idx !== -1) {
+            folders[idx].name = nameInput.value.trim();
+            setCharacterFolders(characterId, folders);
+            console.log('ChatPlus: Folder renamed to:', nameInput.value.trim());
+            // Refresh the character chat modal
+            await refreshCharacterChatModal(characterId);
+        }
+    }
+}
+
+/**
+ * Show delete folder popup.
+ * @param {string} characterId - Character ID.
+ * @param {Object} folder - Folder object.
+ */
+async function showDeleteFolderPopup(characterId, folder) {
+    // Count chats in this folder
+    const chatFoldersMap = getCharacterChatFoldersMap(characterId);
+    let chatsInFolder = 0;
+    
+    Object.values(chatFoldersMap).forEach(folderIds => {
+        if (folderIds.includes(folder.id)) {
+            chatsInFolder++;
+        }
+    });
+    
+    const content = document.createElement('div');
+    content.innerHTML = `
+        <h3>Delete folder "${folder.name}"</h3>
+        <p>Are you sure you want to delete this folder?</p>
+        ${chatsInFolder > 0 ? 
+            `<p style="color: #ffa500;">⚠️ This folder contains ${chatsInFolder} chat(s).<br/>
+             The chats will be moved to "Uncategorized" and will not be deleted.</p>` : 
+            `<p style="color: #888;">This folder is empty.</p>`}
+    `;
+    
+    const popup = new Popup(content, POPUP_TYPE.CONFIRM, '', {
+        okButton: t`Delete`,
+        cancelButton: t`Cancel`,
+        wide: true
+    });
+    
+    const result = await popup.show();
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        console.log('ChatPlus: Deleting folder:', folder.name);
+        
+        // Remove folder from folder list
+        let folders = getCharacterFolders(characterId);
+        folders = folders.filter(f => f.id !== folder.id);
+        setCharacterFolders(characterId, folders);
+        
+        // Remove folder assignments from all chats (chats become uncategorized)
+        const updatedChatFoldersMap = {};
+        Object.entries(chatFoldersMap).forEach(([chatFile, folderIds]) => {
+            const updatedFolderIds = folderIds.filter(id => id !== folder.id);
+            if (updatedFolderIds.length > 0) {
+                updatedChatFoldersMap[chatFile] = updatedFolderIds;
+            }
+            // If no folder IDs left, don't add to map (becomes uncategorized)
+        });
+        setCharacterChatFoldersMap(characterId, updatedChatFoldersMap);
+        
+        console.log('ChatPlus: Folder deleted successfully');
+        
+        // Refresh the character chat modal
+        await refreshCharacterChatModal(characterId);
+    }
 }
 
 /**
@@ -866,7 +962,13 @@ async function renderCharacterFolderView(characterId) {
     
     foldersContainer.appendChild(folderControls);
     
-    // Render uncategorized chats first
+    // Render folder structure first (user-created folders)
+    const folderTree = buildCharacterFolderTree(characterId);
+    if (folderTree.length > 0) {
+        renderCharacterChatFoldersUI(characterId, foldersContainer, folderedChats, folderTree);
+    }
+    
+    // Render uncategorized chats last
     const uncategorizedChats = characterChats.filter(chat => {
         const folderIds = getCharacterChatFoldersMap(characterId)[chat.file_name] || [];
         return folderIds.length === 0;
@@ -875,6 +977,7 @@ async function renderCharacterFolderView(characterId) {
     if (uncategorizedChats.length > 0) {
         const uncategorizedSection = document.createElement('div');
         uncategorizedSection.className = 'uncategorized-section';
+        uncategorizedSection.style.marginTop = '20px'; // Add space above uncategorized
         
         const header = document.createElement('div');
         header.className = 'folder-header';
@@ -891,12 +994,6 @@ async function renderCharacterFolderView(characterId) {
         });
         
         foldersContainer.appendChild(uncategorizedSection);
-    }
-    
-    // Render folder structure
-    const folderTree = buildCharacterFolderTree(characterId);
-    if (folderTree.length > 0) {
-        renderCharacterChatFoldersUI(characterId, foldersContainer, folderedChats, folderTree);
     }
     
     selectChatDiv.appendChild(foldersContainer);
