@@ -1,0 +1,594 @@
+.hidden {
+    display: none !important;
+}
+
+.icon-slash-overlay {
+  position: relative;
+  display: inline-block;
+}
+.icon-slash-overlay::after {
+    content: "";
+    position: absolute;
+    left: 40%;
+    top: 0;
+    width: 15%;
+    height: 100%;
+    background: var(--SmartThemeBodyColor);
+    transform: rotate(-45deg);
+    pointer-events: none;
+}
+
+/* Collapsible section: always take full width, do not shrink, and keep order */
+.collapsible-section {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+    min-height: 48px;
+    padding-left: 24px;
+}
+
+.collapsible-section:not(.collapsed) {
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+}
+
+.collapsible-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 8px;
+    user-select: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #ccc) 25%, transparent);
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin-top: 5px;
+}
+.collapsible-header .chevron {
+    transition: transform 0.2s;
+    margin-right: 4px;
+    font-size: 1.1em;
+    min-width: 16px;
+    width: 16px;
+}
+.collapsible-header.collapsed .chevron {
+    transform: rotate(-90deg);
+}
+.collapsible-header .folder-title {
+    flex-grow: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.collapsible-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding-top: 6px;
+    transition: max-height 0.2s, opacity 0.2s;
+}
+.collapsible-content.collapsed {
+    display: none;
+}
+
+.emptyFolderMessage {
+    margin-left: 43px;
+    opacity: 0.6;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    color: var(--SmartThemeTextColor, #CCC);
+    text-align: left;
+}
+
+.removeFolderBtn {
+    background: none !important;
+    border: none;
+    color: var(--SmartThemeDangerColor, #c00);
+    margin-left: 8px;
+    padding: 2px 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    opacity: 0.7;
+    vertical-align: middle;
+    border-radius: 4px;
+    transition: background 0.15s, opacity 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.removeFolderBtn:hover {
+    background: rgba(200,0,0,0.08);
+    color: var(--SmartThemeDangerColor, #a00);
+    opacity: 1;
+}
+
+.icon-grey {
+    color: #888 !important;
+    opacity: 0.7;
+}
+
+.addFolderBtn {
+    background: none;
+    border: 1px dashed var(--SmartThemeBorderColor);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-left: auto;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 2px 8px;
+    opacity: 0.7;
+    transition: opacity 0.2s, background 0.15s;
+    align-self: flex-end;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-folder-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px 8px 4px 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.add-folder-btn, .settings-action-btn {
+    background: none;
+    border: 1.5px dashed var(--SmartThemeBorderColor, #bbb);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 500;
+    padding: 0 8px;
+    height: 26px;
+    min-width: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--SmartThemeTextColor, #444);
+    opacity: 0.8;
+    transition: all 0.5s ease;
+    box-shadow: none;
+}
+.add-folder-btn:hover, .settings-action-btn:hover {
+    background: color-mix(in srgb, var(--SmartThemeBodyColor, #ccc) 10%, transparent);
+    color: var(--SmartThemeBodyColor, #ccc);
+    opacity: 1;
+    border-color: var(--SmartThemeBodyColor, #ccc);
+}
+
+.settings-action-btn {
+    margin: 0 2px;
+    min-width: 0;
+    font-size: 0.95em;
+    height: 26px;
+    padding: 0 10px;
+    border-width: 1px;
+}
+
+/* Tab item styles (formerly Sidebar item styles) */
+.tabItem {
+    display: flex;
+    flex-direction: row;
+    transition: filter 0.2s;
+    padding: 5px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    gap: 2px;
+    border: 1px solid var(--SmartThemeBorderColor);
+}
+.tabItem.selected {
+    background-color: var(--cobalt30a);
+}
+.tabItem:hover {
+    background-color: color-mix(in srgb, var(--SmartThemeBodyColor, #ccc) 10%, transparent);
+}
+.tabItem.pinned {
+    background: var(--cobalt10a);
+}
+
+.pinBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+.pinBtn:hover {
+    opacity: 1;
+    color: var(--SmartThemeQuoteColor);
+}
+
+.tabItem-root {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 5px 0;
+    transition: all 0.5s ease;
+}
+.tabItem-previewImg {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+    flex: 0 0 32px;
+}
+.tabItem-singleline .tabItem-previewImg {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    max-width: 24px;
+    max-height: 24px;
+    object-fit: cover;
+    border-radius: 5px;
+    align-self: center;
+}
+.tabItem-singleline .tabItem-nameRow {
+    font-size: calc(var(--mainFontSize) * 0.95);
+    text-align: left;
+}
+.tabItem-infoContainer {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+}
+.tabItem-nameRow {
+    width: 100%;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+.tabItem-bottomRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin: 1px 0;
+}
+.tabItem-message {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    opacity: 0.8;
+}
+.tabItem-pinBtn {
+    align-self: flex-end;
+}
+
+.filter-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 8px 4px 12px 4px;
+}
+.filter-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.filter-input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 1em;
+    background-color: var(--black30a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor);
+    margin-right: 8px;
+    padding-right: 30px; /* Make room for the clear button */
+}
+
+.filter-clear-button {
+    display: none;
+    position: absolute;
+    right: 15px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #888;
+    font-size: 14px;
+    z-index: 10; /* Ensure it's on top */
+}
+
+.filter-clear-button:hover {
+    color: #fff;
+}
+
+.filter-clear-button:focus {
+    outline: none;
+    color: #fff;
+}
+
+.allChatsTabLoader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.allChatsDateSeparator {
+    font-weight: 600;
+    font-size: calc(var(--mainFontSize) * 1.05);
+    margin: 8px 0 2px 0;
+    padding: 4px 10px 2px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    border-radius: 0;
+}
+
+.allChatsDateSeparator:first-of-type {
+    margin-top: 16px;
+}
+.allChatsDateSeparator button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+    margin-left: 4px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.allChatsDateSeparator button:hover {
+    opacity: 1;
+}
+
+/* Make extension tab content scrollable */
+.chatsplus-tab-content {
+    max-height: 100%;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* Extension tab buttons styling - unified look, no special active state */
+.chatsplus-tabs-container {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    overflow-x: auto;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 0;
+    background: none;
+    border: none;
+    box-sizing: border-box;
+    border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #ccc) 10%, transparent);
+}
+.chatsplus-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: inherit;
+    font-weight: 500;
+    font-size: 1em;
+    padding: 8px 0;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.5s ease;
+    box-shadow: none;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    opacity: 0.7;
+    border-bottom: 1px solid transparent;
+}
+.chatsplus-tab:hover {
+    color: var(--SmartThemeBodyColor, #ccc);
+    opacity: 0.9;
+}
+.chatsplus-tab.active {
+    color: var(--SmartThemeBodyColor, #ccc);
+    border-bottom: 1px solid var(--SmartThemeBodyColor, #ccc);
+    z-index: 3;
+    opacity: 1;
+}
+
+.pin-popup-content {
+    max-height: 100%;
+    height: 100%;
+
+}
+.chatplus_radio_group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 100%;
+    padding-bottom: 20px;
+    overflow-y: auto;
+    padding-right: 4px;
+    background: var(--SmartThemeBlurTintColor, #f8f8f8);
+}
+.chatplus_menu_label {
+    display: block;
+    margin: 8px 0 2px 0;
+}
+.chatplus_menu_input {
+    width: 100%;
+    margin-bottom: 8px;
+    background-color: var(--black30a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 5px 10px;
+    color: var(--SmartThemeBodyColor);
+}
+
+.pin-popup-chat-preview {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.load-more-btn {
+    width: 100%;
+    margin: 16px auto 0 auto;
+    padding: 8px 24px;
+    font-size: 1em;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Character-specific folder styles */
+.character-folders-container {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.folder-controls {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.uncategorized-section {
+    margin-bottom: 20px;
+}
+
+.folder-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.character-folders-container .collapsible-section {
+    border: 1px solid #444;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.character-folders-container .collapsible-header {
+    padding: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px 6px 0 0;
+    transition: background-color 0.2s;
+}
+
+.character-folders-container .collapsible-header:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.character-folders-container .collapsible-content {
+    padding: 8px;
+    border-top: 1px solid #444;
+}
+
+.character-folders-container .folder-rename-icon {
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.character-folders-container .folder-rename-icon:hover {
+    opacity: 1;
+    color: #4a9eff;
+}
+
+.character-folders-container .select_chat_block_wrapper {
+    margin-bottom: 8px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    transition: background-color 0.2s;
+}
+
+.character-folders-container .select_chat_block_wrapper:hover {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: #4a9eff;
+}
+
+.character-folders-container .select_chat_block {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.character-folders-container .fa-folder {
+    color: #4a9eff;
+    transition: color 0.2s;
+}
+
+.character-folders-container .fa-folder:hover {
+    color: #7bb3ff;
+}
+
+/* View toggle styles */
+#chatplus-character-view-toggle {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background: rgba(0,0,0,0.3);
+    padding: 5px;
+}
+
+#chatplus-character-view-toggle .menu_button {
+    flex: 1;
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+#chatplus-character-view-toggle .menu_button:hover {
+    background-color: rgba(74, 158, 255, 0.5) !important;
+}
+
+/* Collapsed folder state */
+.character-folders-container .collapsible-section.collapsed .collapsible-content {
+    display: none;
+}
+
+.character-folders-container .collapsible-section.collapsed .collapsible-header {
+    border-radius: 6px;
+}
