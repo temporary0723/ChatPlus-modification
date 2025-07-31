@@ -983,7 +983,7 @@ async function renderCharacterFolderView(characterId) {
     
     const addFolderBtn = document.createElement('button');
     addFolderBtn.className = 'menu_button';
-    addFolderBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Folder';
+    addFolderBtn.innerHTML = '<i class="fa-solid fa-plus"></i>&nbsp;&nbsp;Add Folder';
     addFolderBtn.addEventListener('click', async () => {
         const folderName = prompt('Enter folder name:');
         if (folderName && folderName.trim()) {
@@ -3947,13 +3947,13 @@ function addCharacterFolderViewToggle() {
     // List view button
     const listViewBtn = document.createElement('button');
     listViewBtn.className = 'menu_button';
-    listViewBtn.innerHTML = '<i class="fa-solid fa-list"></i> List View';
+    listViewBtn.innerHTML = '<i class="fa-solid fa-list"></i>&nbsp;&nbsp;List View';
     listViewBtn.style.cssText = 'flex: 1; margin: 0;';
     
     // Folder view button
     const folderViewBtn = document.createElement('button');
     folderViewBtn.className = 'menu_button';
-    folderViewBtn.innerHTML = '<i class="fa-solid fa-folder"></i> Folder View';
+    folderViewBtn.innerHTML = '<i class="fa-solid fa-folder"></i>&nbsp;&nbsp;Folder View';
     folderViewBtn.style.cssText = 'flex: 1; margin: 0;';
     
     // Get current view mode

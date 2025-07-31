@@ -608,6 +608,9 @@
     background: rgba(0,0,0,0.4);
     padding: 4px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    /* Responsive: fill full width on narrow screens */
+    width: calc(100% - 30px); /* Account for margin */
+    box-sizing: border-box;
 }
 
 #chatplus-character-view-toggle .menu_button {
@@ -616,10 +619,21 @@
     padding: 8px 12px;
     font-size: 0.9em;
     transition: background-color 0.2s;
+    /* Prevent text wrapping */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #chatplus-character-view-toggle .menu_button:hover {
     background-color: rgba(74, 158, 255, 0.5) !important;
+}
+
+/* Add Folder button styles */
+.character-folders-container .menu_button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Collapsed folder state */
@@ -629,4 +643,30 @@
 
 .character-folders-container .collapsible-section.collapsed .collapsible-header {
     border-radius: 6px;
+}
+
+/* Responsive design for narrow screens */
+@media (max-width: 600px) {
+    #chatplus-character-view-toggle {
+        margin: 10px 10px;
+        width: calc(100% - 20px);
+    }
+    
+    #chatplus-character-view-toggle .menu_button {
+        padding: 6px 8px;
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 400px) {
+    #chatplus-character-view-toggle {
+        margin: 8px 5px;
+        width: calc(100% - 10px);
+        gap: 2px;
+    }
+    
+    #chatplus-character-view-toggle .menu_button {
+        padding: 5px 6px;
+        font-size: 0.75em;
+    }
 }
