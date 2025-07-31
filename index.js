@@ -4313,10 +4313,29 @@ function getCurrentChatName() {
             console.log('ChatPlus: Method 1 - Character chat detected, chat name:', currentChatName);
         }
         
-        // Method 2: Try direct properties
+        // Method 2: Try SillyTavern's chat ID functions and properties
         if (!currentChatName) {
-            currentChatName = context.currentChatName || context.chat_name || context.sessionName || context.chat || null;
-            console.log('ChatPlus: Method 2 - Direct properties, found:', currentChatName);
+            // Try getCurrentChatId function first
+            if (typeof context.getCurrentChatId === 'function') {
+                try {
+                    currentChatName = context.getCurrentChatId();
+                    console.log('ChatPlus: Method 2A - getCurrentChatId() function, found:', currentChatName);
+                } catch (e) {
+                    console.log('ChatPlus: Method 2A - getCurrentChatId() failed:', e.message);
+                }
+            }
+            
+            // Try chatId property
+            if (!currentChatName && context.chatId) {
+                currentChatName = context.chatId;
+                console.log('ChatPlus: Method 2B - chatId property, found:', currentChatName);
+            }
+            
+            // Try other direct properties (exclude context.chat as it's message array)
+            if (!currentChatName) {
+                currentChatName = context.currentChatName || context.chat_name || context.sessionName || null;
+                console.log('ChatPlus: Method 2C - Other direct properties, found:', currentChatName);
+            }
         }
         
         // Method 3: Try chat_metadata
@@ -4336,9 +4355,20 @@ function getCurrentChatName() {
                     groups: window.groups,
                     chat_metadata: window.chat_metadata,
                     currentChatName: window.currentChatName,
-                    sessionName: window.sessionName
+                    sessionName: window.sessionName,
+                    chatId: window.chatId,
+                    chat_name: window.chat_name
                 };
                 console.log('ChatPlus: Method 4 - Global variables:', globalVars);
+                
+                // Try global chatId or chat_name first
+                if (window.chatId) {
+                    currentChatName = window.chatId;
+                    console.log('ChatPlus: Method 4A - Global chatId:', currentChatName);
+                } else if (window.chat_name) {
+                    currentChatName = window.chat_name;
+                    console.log('ChatPlus: Method 4B - Global chat_name:', currentChatName);
+                }
                 
                 if (window.selected_group && window.groups) {
                     const group = window.groups.find(x => x.id === window.selected_group);
