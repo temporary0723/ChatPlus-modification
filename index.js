@@ -749,8 +749,9 @@ async function showCharacterChatFolderManagement(characterId, fileName) {
         const folderName = prompt('Enter folder name:');
         if (folderName && folderName.trim()) {
             addCharacterFolder(characterId, folderName.trim());
-            // Refresh the popup
-            showCharacterChatFolderManagement(characterId, fileName);
+            
+            // Update the modal content instead of opening a new modal
+            updateFolderCheckboxes(characterId, fileName, foldersDiv);
         }
     });
     content.appendChild(addFolderBtn);
@@ -779,6 +780,27 @@ async function showCharacterChatFolderManagement(characterId, fileName) {
         // Refresh the character chat modal
         refreshCharacterChatModal(characterId);
     }
+}
+
+/**
+ * Update folder checkboxes in existing modal (instead of opening new modal).
+ * @param {string} characterId - Character ID.
+ * @param {string} fileName - File name.
+ * @param {HTMLElement} foldersDiv - Container element for checkboxes.
+ */
+function updateFolderCheckboxes(characterId, fileName, foldersDiv) {
+    // Get current selections before clearing
+    const currentChecked = Array.from(foldersDiv.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+    
+    // Clear existing content
+    foldersDiv.innerHTML = '';
+    
+    // Re-render with updated folder list
+    const folderTree = buildCharacterFolderTree(characterId);
+    renderFolderCheckboxes(folderTree, foldersDiv, currentChecked, 0);
+    
+    console.log('ChatPlus: Folder checkboxes updated with new folder');
 }
 
 function renderFolderCheckboxes(folderTree, container, selectedIds, level = 0) {
