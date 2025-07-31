@@ -709,19 +709,50 @@ async function refreshCharacterChatModal(characterId) {
  * @param {string} characterId - Character ID.
  */
 async function renderCharacterFolderView(characterId) {
+    console.log('ChatPlus: renderCharacterFolderView called with ID:', characterId);
+    
     const selectChatDiv = document.getElementById('select_chat_div');
-    if (!selectChatDiv) return;
+    if (!selectChatDiv) {
+        console.log('ChatPlus: select_chat_div not found');
+        return;
+    }
     
     selectChatDiv.innerHTML = '';
+    
+    // Check if we have a valid character ID
+    if (!characterId || characterId === undefined || characterId === null) {
+        console.log('ChatPlus: Invalid character ID, showing error message');
+        selectChatDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #888;">
+                <div style="font-size: 18px; margin-bottom: 10px;">⚠️ Cannot load folder view</div>
+                <div>Character ID not found. Please try:</div>
+                <ul style="text-align: left; margin: 20px auto; max-width: 300px;">
+                    <li>Refreshing the page</li>
+                    <li>Selecting a character first</li>
+                    <li>Using List View instead</li>
+                </ul>
+                <button onclick="localStorage.setItem('chatplus_character_view_mode', 'list'); location.reload();" 
+                        style="padding: 8px 16px; margin-top: 10px; background: #4a9eff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Switch to List View
+                </button>
+            </div>
+        `;
+        return;
+    }
     
     // Get character chats
     const context = SillyTavern.getContext();
     let characterChats = [];
     
     try {
+        console.log('ChatPlus: Getting character info for ID:', characterId);
+        console.log('ChatPlus: Available characters:', context?.characters ? Object.keys(context.characters) : 'No characters');
+        
         // Get the character info
-        const character = context.characters[characterId];
+        const character = context.characters?.[characterId];
         if (character && character.avatar) {
+            console.log('ChatPlus: Found character:', character.name, 'avatar:', character.avatar);
+            
             const response = await fetch('/api/chats/search', {
                 method: 'POST',
                 headers: context.getRequestHeaders(),
@@ -734,11 +765,30 @@ async function renderCharacterFolderView(characterId) {
             
             if (response.ok) {
                 characterChats = await response.json();
+                console.log('ChatPlus: Loaded', characterChats.length, 'chats');
                 characterChats.sort((a, b) => context.sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
+            } else {
+                console.error('ChatPlus: Failed to fetch chats, status:', response.status);
             }
+        } else {
+            console.log('ChatPlus: Character not found or no avatar');
+            selectChatDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #888;">
+                    <div style="font-size: 18px; margin-bottom: 10px;">⚠️ Character not found</div>
+                    <div>Character ID "${characterId}" does not exist or has no avatar.</div>
+                </div>
+            `;
+            return;
         }
     } catch (error) {
-        console.error('Error loading character chats:', error);
+        console.error('ChatPlus: Error loading character chats:', error);
+        selectChatDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #888;">
+                <div style="font-size: 18px; margin-bottom: 10px;">❌ Error loading chats</div>
+                <div>Failed to load chat data: ${error.message}</div>
+            </div>
+        `;
+        return;
     }
     
     // Build foldered chats map
@@ -3805,20 +3855,56 @@ function addCharacterFolderViewToggle() {
 function getCurrentCharacterId() {
     // Try multiple ways to get the current character ID
     try {
+        console.log('ChatPlus: Attempting to get character ID...');
+        
         // Method 1: SillyTavern context
         const context = SillyTavern?.getContext();
-        if (context?.this_chid !== undefined) {
+        console.log('ChatPlus: SillyTavern context:', context);
+        console.log('ChatPlus: context.this_chid:', context?.this_chid);
+        
+        if (context?.this_chid !== undefined && context?.this_chid !== null) {
+            console.log('ChatPlus: Found character ID via context:', context.this_chid);
             return context.this_chid;
         }
         
         // Method 2: Global variables
-        if (typeof this_chid !== 'undefined' && this_chid !== undefined) {
-            return this_chid;
+        if (typeof window.this_chid !== 'undefined' && window.this_chid !== undefined && window.this_chid !== null) {
+            console.log('ChatPlus: Found character ID via window.this_chid:', window.this_chid);
+            return window.this_chid;
         }
         
-        // Method 3: Check URL or other indicators
-        // This might be needed for some SillyTavern versions
+        // Method 3: Try accessing global this_chid directly
+        try {
+            if (typeof this_chid !== 'undefined' && this_chid !== undefined && this_chid !== null) {
+                console.log('ChatPlus: Found character ID via global this_chid:', this_chid);
+                return this_chid;
+            }
+        } catch (e) {
+            // this_chid might not be accessible in this scope
+        }
         
+        // Method 4: Check DOM for character info
+        const charNameElement = document.getElementById('ChatHistoryCharName');
+        if (charNameElement && charNameElement.textContent) {
+            console.log('ChatPlus: Found character name in DOM:', charNameElement.textContent);
+            // Try to find character by name
+            if (context?.characters) {
+                for (const [id, char] of Object.entries(context.characters)) {
+                    if (char.name === charNameElement.textContent.trim()) {
+                        console.log('ChatPlus: Found character ID by name match:', id);
+                        return id;
+                    }
+                }
+            }
+        }
+        
+        // Method 5: Check if we're in a group chat
+        if (context?.selected_group && context?.selected_group !== null) {
+            console.log('ChatPlus: Found group ID:', context.selected_group);
+            return 'group_' + context.selected_group;
+        }
+        
+        console.log('ChatPlus: Could not find character ID with any method');
         return undefined;
     } catch (error) {
         console.error('ChatPlus: Error getting character ID:', error);
