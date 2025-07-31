@@ -746,10 +746,26 @@ async function renderCharacterFolderView(characterId) {
     
     try {
         console.log('ChatPlus: Getting character info for ID:', characterId);
-        console.log('ChatPlus: Available characters:', context?.characters ? Object.keys(context.characters) : 'No characters');
         
-        // Get the character info
-        const character = context.characters?.[characterId];
+        // Handle both array and object character structures
+        let character = null;
+        if (context?.characters) {
+            if (Array.isArray(context.characters)) {
+                console.log('ChatPlus: Characters is array with', context.characters.length, 'items');
+                const charIndex = parseInt(characterId);
+                if (!isNaN(charIndex) && charIndex >= 0 && charIndex < context.characters.length) {
+                    character = context.characters[charIndex];
+                    console.log('ChatPlus: Found character at index', charIndex, ':', character?.name);
+                } else {
+                    console.log('ChatPlus: Invalid character index:', characterId);
+                }
+            } else {
+                console.log('ChatPlus: Characters is object with keys:', Object.keys(context.characters));
+                character = context.characters[characterId];
+                console.log('ChatPlus: Found character with ID', characterId, ':', character?.name);
+            }
+        }
+        
         if (character && character.avatar) {
             console.log('ChatPlus: Found character:', character.name, 'avatar:', character.avatar);
             
@@ -3883,12 +3899,61 @@ function getCurrentCharacterId() {
             // this_chid might not be accessible in this scope
         }
         
-        // Method 4: Check DOM for character info
+        // Method 4: Check if characters is an array and find active character
+        if (context?.characters && Array.isArray(context.characters)) {
+            console.log('ChatPlus: Characters is an array with', context.characters.length, 'items');
+            
+            // Try to find active character by various indicators
+            
+            // 4a. Check DOM for character name
+            const charNameElement = document.getElementById('ChatHistoryCharName');
+            if (charNameElement && charNameElement.textContent) {
+                const charName = charNameElement.textContent.trim();
+                console.log('ChatPlus: Found character name in DOM:', charName);
+                
+                // Find character by name in array
+                const charIndex = context.characters.findIndex(char => char && char.name === charName);
+                if (charIndex !== -1) {
+                    console.log('ChatPlus: Found character ID by name match:', charIndex);
+                    return charIndex.toString();
+                }
+            }
+            
+            // 4b. Check if there's a currently selected character
+            if (context.characterId !== undefined && context.characterId !== null) {
+                console.log('ChatPlus: Found context.characterId:', context.characterId);
+                return context.characterId.toString();
+            }
+            
+            // 4c. Check chat metadata for character info
+            if (context?.chat && context.chat.length > 0) {
+                const lastMessage = context.chat[context.chat.length - 1];
+                console.log('ChatPlus: Last message:', lastMessage);
+                
+                // Try to extract character info from chat
+                if (lastMessage?.extra?.character_id !== undefined) {
+                    console.log('ChatPlus: Found character ID in chat metadata:', lastMessage.extra.character_id);
+                    return lastMessage.extra.character_id.toString();
+                }
+            }
+            
+            // 4d. Check for selected_button or similar indicators
+            const selectedButton = document.querySelector('.character_select.selected');
+            if (selectedButton) {
+                const chid = selectedButton.getAttribute('chid');
+                if (chid) {
+                    console.log('ChatPlus: Found character ID from selected button:', chid);
+                    return chid;
+                }
+            }
+        }
+        
+        // Method 5: Check DOM for character info (object-based characters)
         const charNameElement = document.getElementById('ChatHistoryCharName');
         if (charNameElement && charNameElement.textContent) {
             console.log('ChatPlus: Found character name in DOM:', charNameElement.textContent);
             // Try to find character by name
-            if (context?.characters) {
+            if (context?.characters && !Array.isArray(context.characters)) {
                 for (const [id, char] of Object.entries(context.characters)) {
                     if (char.name === charNameElement.textContent.trim()) {
                         console.log('ChatPlus: Found character ID by name match:', id);
@@ -3898,10 +3963,30 @@ function getCurrentCharacterId() {
             }
         }
         
-        // Method 5: Check if we're in a group chat
+        // Method 6: Check if we're in a group chat
         if (context?.selected_group && context?.selected_group !== null) {
             console.log('ChatPlus: Found group ID:', context.selected_group);
             return 'group_' + context.selected_group;
+        }
+        
+        // Method 7: Try to get character from current conversation
+        if (context?.name2 && context.characters) {
+            console.log('ChatPlus: Current character name from context.name2:', context.name2);
+            
+            if (Array.isArray(context.characters)) {
+                const charIndex = context.characters.findIndex(char => char && char.name === context.name2);
+                if (charIndex !== -1) {
+                    console.log('ChatPlus: Found character ID by name2 match:', charIndex);
+                    return charIndex.toString();
+                }
+            } else {
+                for (const [id, char] of Object.entries(context.characters)) {
+                    if (char.name === context.name2) {
+                        console.log('ChatPlus: Found character ID by name2 match:', id);
+                        return id;
+                    }
+                }
+            }
         }
         
         console.log('ChatPlus: Could not find character ID with any method');
