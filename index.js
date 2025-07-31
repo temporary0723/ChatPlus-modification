@@ -510,7 +510,7 @@ async function showRenameFolderPopup(characterId, folder) {
         if (idx !== -1) {
             folders[idx].name = nameInput.value.trim();
             setCharacterFolders(characterId, folders);
-            console.log('ChatPlus: Folder renamed to:', nameInput.value.trim());
+
             // Refresh the character chat modal
             await refreshCharacterChatModal(characterId);
         }
@@ -551,7 +551,7 @@ async function showDeleteFolderPopup(characterId, folder) {
     
     const result = await popup.show();
     if (result === POPUP_RESULT.AFFIRMATIVE) {
-        console.log('ChatPlus: Deleting folder:', folder.name);
+
         
         // Remove folder from folder list
         let folders = getCharacterFolders(characterId);
@@ -569,7 +569,7 @@ async function showDeleteFolderPopup(characterId, folder) {
         });
         setCharacterChatFoldersMap(characterId, updatedChatFoldersMap);
         
-        console.log('ChatPlus: Folder deleted successfully');
+
         
         // Refresh the character chat modal
         await refreshCharacterChatModal(characterId);
@@ -598,12 +598,12 @@ function createCharacterChatElement(characterId, chat) {
     
     if (isSelected) {
         chatBlock.setAttribute('highlight', String(true));
-        console.log('ChatPlus: ✅ Current chat highlighted in folder view:', chat.file_name);
+        
     }
     
     // Make it clickable to load the chat
     chatBlock.addEventListener('click', () => {
-        console.log('ChatPlus: Chat clicked:', chat.file_name);
+
         
         try {
             // Use SillyTavern's existing chat loading mechanism
@@ -629,7 +629,7 @@ function createCharacterChatElement(characterId, chat) {
                 closeBtn.click();
             }
         } catch (error) {
-            console.error('ChatPlus: Error loading chat:', error);
+            console.error('ChatPlus: Error loading chat:', error.message);
         }
     });
     
@@ -680,7 +680,7 @@ function createCharacterChatElement(characterId, chat) {
                 dateSpan.textContent = date.toLocaleString();
             }
         } catch (dateError) {
-            console.warn('ChatPlus: Could not format date:', dateError);
+            
             dateSpan.textContent = new Date(chat.last_mes || 0).toLocaleString();
         }
         
@@ -744,7 +744,7 @@ async function showCharacterChatFolderManagement(characterId, fileName) {
     // Add new folder button
     const addFolderBtn = document.createElement('button');
     addFolderBtn.className = 'menu_button';
-    addFolderBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add New Folder';
+    addFolderBtn.innerHTML = '<i class="fa-solid fa-plus"></i>&nbsp;&nbsp;Add New Folder';
     addFolderBtn.addEventListener('click', async () => {
         const folderName = prompt('Enter folder name:');
         if (folderName && folderName.trim()) {
@@ -800,7 +800,7 @@ function updateFolderCheckboxes(characterId, fileName, foldersDiv) {
     const folderTree = buildCharacterFolderTree(characterId);
     renderFolderCheckboxes(folderTree, foldersDiv, currentChecked, 0);
     
-    console.log('ChatPlus: Folder checkboxes updated with new folder');
+
 }
 
 function renderFolderCheckboxes(folderTree, container, selectedIds, level = 0) {
@@ -842,7 +842,7 @@ async function refreshCharacterChatModal(characterId) {
                 await context.displayPastChats();
             }
         } catch (error) {
-            console.error('ChatPlus: Error refreshing chat modal:', error);
+            console.error('ChatPlus: Error refreshing chat modal:', error.message);
         }
     }
 }
@@ -852,11 +852,11 @@ async function refreshCharacterChatModal(characterId) {
  * @param {string} characterId - Character ID.
  */
 async function renderCharacterFolderView(characterId) {
-    console.log('ChatPlus: renderCharacterFolderView called with ID:', characterId);
+
     
     const selectChatDiv = document.getElementById('select_chat_div');
     if (!selectChatDiv) {
-        console.log('ChatPlus: select_chat_div not found');
+
         return;
     }
     
@@ -864,7 +864,7 @@ async function renderCharacterFolderView(characterId) {
     
     // Check if we have a valid character ID
     if (!characterId || characterId === undefined || characterId === null) {
-        console.log('ChatPlus: Invalid character ID, showing error message');
+
         selectChatDiv.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #888;">
                 <div style="font-size: 18px; margin-bottom: 10px;">⚠️ Cannot load folder view</div>
@@ -888,29 +888,29 @@ async function renderCharacterFolderView(characterId) {
     let characterChats = [];
     
     try {
-        console.log('ChatPlus: Getting character info for ID:', characterId);
+
         
         // Handle both array and object character structures
         let character = null;
         if (context?.characters) {
             if (Array.isArray(context.characters)) {
-                console.log('ChatPlus: Characters is array with', context.characters.length, 'items');
+
                 const charIndex = parseInt(characterId);
                 if (!isNaN(charIndex) && charIndex >= 0 && charIndex < context.characters.length) {
                     character = context.characters[charIndex];
-                    console.log('ChatPlus: Found character at index', charIndex, ':', character?.name);
+
                 } else {
-                    console.log('ChatPlus: Invalid character index:', characterId);
+
                 }
             } else {
-                console.log('ChatPlus: Characters is object with keys:', Object.keys(context.characters));
+
                 character = context.characters[characterId];
-                console.log('ChatPlus: Found character with ID', characterId, ':', character?.name);
+
             }
         }
         
         if (character && character.avatar) {
-            console.log('ChatPlus: Found character:', character.name, 'avatar:', character.avatar);
+
             
             const response = await fetch('/api/chats/search', {
                 method: 'POST',
@@ -924,7 +924,7 @@ async function renderCharacterFolderView(characterId) {
             
             if (response.ok) {
                 characterChats = await response.json();
-                console.log('ChatPlus: Loaded', characterChats.length, 'chats');
+
                 
                 // Sort chats by timestamp (most recent first)
                 try {
@@ -938,16 +938,16 @@ async function renderCharacterFolderView(characterId) {
                             return timeB - timeA; // Most recent first
                         });
                     }
-                    console.log('ChatPlus: Chats sorted successfully');
+
                 } catch (sortError) {
-                    console.warn('ChatPlus: Could not sort chats:', sortError);
+                    console.warn('ChatPlus: Could not sort chats, using fallback order:', sortError.message);
                     // Continue without sorting
                 }
             } else {
-                console.error('ChatPlus: Failed to fetch chats, status:', response.status);
+                console.error('ChatPlus: Failed to fetch chats, HTTP status:', response.status);
             }
         } else {
-            console.log('ChatPlus: Character not found or no avatar');
+
             selectChatDiv.innerHTML = `
                 <div style="text-align: center; padding: 40px; color: #888;">
                     <div style="font-size: 18px; margin-bottom: 10px;">⚠️ Character not found</div>
@@ -957,7 +957,7 @@ async function renderCharacterFolderView(characterId) {
             return;
         }
     } catch (error) {
-        console.error('ChatPlus: Error loading character chats:', error);
+        console.error('ChatPlus: Error loading character chats:', error.message);
         selectChatDiv.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #888;">
                 <div style="font-size: 18px; margin-bottom: 10px;">❌ Error loading chats</div>
@@ -3834,7 +3834,7 @@ function handleCharacterPageLoaded() {
 
 // Hook into SillyTavern's chat modal to add folder view toggle
 (() => {
-    console.log('ChatPlus: Initializing character folder integration');
+
     
     // Debouncing to prevent multiple calls
     let toggleTimeout = null;
@@ -3891,7 +3891,7 @@ function handleCharacterPageLoaded() {
             attributeFilter: ['style']
         });
         
-        console.log('ChatPlus: MutationObserver started');
+
     };
     
     // Start observing when DOM is ready
@@ -3905,7 +3905,7 @@ function handleCharacterPageLoaded() {
     setTimeout(() => {
         const modal = document.getElementById('shadow_select_chat_popup');
         if (modal && modal.style.display === 'block') {
-            console.log('ChatPlus: Chat modal already visible on startup');
+    
             addCharacterFolderViewToggle();
         }
     }, 1000);
@@ -3918,7 +3918,7 @@ function addCharacterFolderViewToggle() {
     const header = document.querySelector('div[name="selectChatPopupHeader"]');
     
     if (!header) {
-        console.log('ChatPlus: Header not found, cannot add toggle');
+
         return;
     }
     
@@ -3927,7 +3927,7 @@ function addCharacterFolderViewToggle() {
         return; // Silently return if toggle already exists
     }
     
-    console.log('ChatPlus: Adding folder view toggle');
+
     
     // Create view toggle container
     const toggleContainer = document.createElement('div');
@@ -3977,33 +3977,33 @@ function addCharacterFolderViewToggle() {
         localStorage.setItem('chatplus_character_view_mode', 'list');
         updateButtonStates('list');
         
-        console.log('ChatPlus: Switching to list view');
+
         
         // Method 1: Try to call displayPastChats directly
         try {
             const context = SillyTavern?.getContext();
             if (context && typeof context.displayPastChats === 'function') {
-                console.log('ChatPlus: Calling context.displayPastChats');
+    
                 await context.displayPastChats();
                 return; // Success, exit early
             }
         } catch (error) {
-            console.warn('ChatPlus: context.displayPastChats failed:', error);
+            console.warn('ChatPlus: context.displayPastChats failed, trying fallback:', error.message);
         }
         
         // Method 2: Try window.displayPastChats
         try {
             if (typeof window.displayPastChats === 'function') {
-                console.log('ChatPlus: Calling window.displayPastChats');
+    
                 await window.displayPastChats();
                 return; // Success, exit early
             }
         } catch (error) {
-            console.warn('ChatPlus: window.displayPastChats failed:', error);
+            console.warn('ChatPlus: window.displayPastChats failed, using manual reconstruction:', error.message);
         }
         
         // Method 3: Manual reconstruction using fetch API
-        console.log('ChatPlus: Using manual list reconstruction');
+        
         const selectChatDiv = document.getElementById('select_chat_div');
         if (selectChatDiv) {
             selectChatDiv.innerHTML = '<div style="text-align: center; padding: 20px;">Loading list view...</div>';
@@ -4016,7 +4016,7 @@ function addCharacterFolderViewToggle() {
                     selectChatDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">Could not load list view. Please refresh the page.</div>';
                 }
             } catch (error) {
-                console.error('ChatPlus: Manual list reconstruction failed:', error);
+                console.error('ChatPlus: Manual list reconstruction failed:', error.message);
                 selectChatDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">Error loading list view. Please refresh the page.</div>';
             }
         }
@@ -4028,14 +4028,14 @@ function addCharacterFolderViewToggle() {
         
         // Get current character ID - try multiple methods
         let currentCharacterId = getCurrentCharacterId();
-        console.log('ChatPlus: Current character ID:', currentCharacterId);
+
         
         if (currentCharacterId !== undefined && currentCharacterId !== null) {
             await renderCharacterFolderView(currentCharacterId);
             // Re-add the toggle after refresh
             setTimeout(() => addCharacterFolderViewToggle(), 100);
         } else {
-            console.log('ChatPlus: No character ID found, cannot switch to folder view');
+
         }
     });
     
@@ -4045,7 +4045,7 @@ function addCharacterFolderViewToggle() {
     // Insert after the header
     header.parentNode.insertBefore(toggleContainer, header.nextSibling);
     
-    console.log('ChatPlus: Folder view toggle ready');
+
     
     // If we're already in folder mode, switch to it
     if (currentMode === 'folder') {
@@ -4061,7 +4061,7 @@ function addCharacterFolderViewToggle() {
  * @param {string} characterId - Character ID.
  */
 async function renderListView(characterId) {
-    console.log('ChatPlus: renderListView called with ID:', characterId);
+
     
     const selectChatDiv = document.getElementById('select_chat_div');
     if (!selectChatDiv) return;
@@ -4086,7 +4086,7 @@ async function renderListView(characterId) {
         }
         
         if (character && character.avatar) {
-            console.log('ChatPlus: Loading chats for character:', character.name);
+    
             
             const response = await fetch('/api/chats/search', {
                 method: 'POST',
@@ -4100,7 +4100,7 @@ async function renderListView(characterId) {
             
             if (response.ok) {
                 characterChats = await response.json();
-                console.log('ChatPlus: Loaded', characterChats.length, 'chats for list view');
+            
                 
                 // Sort chats by timestamp (most recent first)
                 characterChats.sort((a, b) => {
@@ -4121,10 +4121,10 @@ async function renderListView(characterId) {
             selectChatDiv.appendChild(chatElement);
         });
         
-        console.log('ChatPlus: List view rendered successfully');
+    
         
     } catch (error) {
-        console.error('ChatPlus: Error in renderListView:', error);
+        console.error('ChatPlus: Error in renderListView:', error.message);
         selectChatDiv.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #888;">
                 <div style="font-size: 18px; margin-bottom: 10px;">❌ Error loading list view</div>
@@ -4151,12 +4151,12 @@ function createListChatElement(chat, isSelected, character) {
     
     if (isSelected) {
         chatBlock.setAttribute('highlight', String(true));
-        console.log('ChatPlus: ✅ Current chat highlighted in list view:', chat.file_name);
+        
     }
     
     // Add click handler to load chat
     chatBlock.addEventListener('click', () => {
-        console.log('ChatPlus: Loading chat:', chat.file_name);
+
         
         // Try multiple ways to load the chat
         if (window.loadFileToChat) {
@@ -4272,12 +4272,12 @@ function getCurrentChatName() {
     try {
         const context = SillyTavern?.getContext();
         if (!context) {
-            console.log('ChatPlus: No SillyTavern context available');
+    
             return null;
         }
         
         // Debug info (can be removed in production)
-        // console.log('ChatPlus: Context properties available');
+    
         
         // Try multiple methods to get current chat name
         let currentChatName = null;
@@ -4362,11 +4362,11 @@ function getCurrentChatName() {
         }
         
         // Debug: currentChatName found or not (can be removed in production)
-        // if (currentChatName) console.log('ChatPlus: Current chat found:', currentChatName);
+    
         
         return currentChatName;
     } catch (error) {
-        console.error('ChatPlus: Error getting current chat name:', error);
+        console.error('ChatPlus: Error getting current chat name:', error.message);
         return null;
     }
 }
@@ -4388,33 +4388,33 @@ function getCurrentCharacterId() {
     try {
         const context = SillyTavern?.getContext();
         if (!context) {
-            console.log('ChatPlus: No SillyTavern context available');
+    
             return undefined;
         }
         
         // The working method: check context.characterId for array-based characters
         if (context.characterId !== undefined && context.characterId !== null) {
-            console.log('ChatPlus: Found character ID:', context.characterId);
+    
             return context.characterId.toString();
         }
         
         // Fallback for older SillyTavern versions with this_chid
         if (context.this_chid !== undefined && context.this_chid !== null) {
-            console.log('ChatPlus: Found character ID via this_chid:', context.this_chid);
+    
             return context.this_chid.toString();
         }
         
         // Group chat support
         if (context.selected_group !== undefined && context.selected_group !== null) {
-            console.log('ChatPlus: Found group ID:', context.selected_group);
+    
             return 'group_' + context.selected_group;
         }
         
-        console.log('ChatPlus: No character ID found');
+    
         return undefined;
         
     } catch (error) {
-        console.error('ChatPlus: Error getting character ID:', error);
+        console.error('ChatPlus: Error getting character ID:', error.message);
         return undefined;
     }
 }
