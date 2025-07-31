@@ -744,7 +744,10 @@ async function showCharacterChatFolderManagement(characterId, fileName) {
     // Add new folder button
     const addFolderBtn = document.createElement('button');
     addFolderBtn.className = 'menu_button';
-    addFolderBtn.innerHTML = '<i class="fa-solid fa-plus"></i>&nbsp;&nbsp;Add New Folder';
+    addFolderBtn.innerHTML = '<i class="fa-solid fa-plus"></i>&nbsp;&nbsp;Add Folder';
+    addFolderBtn.style.whiteSpace = 'nowrap';
+    addFolderBtn.style.overflow = 'hidden';
+    addFolderBtn.style.textOverflow = 'ellipsis';
     addFolderBtn.addEventListener('click', async () => {
         const folderName = prompt('Enter folder name:');
         if (folderName && folderName.trim()) {
@@ -984,6 +987,9 @@ async function renderCharacterFolderView(characterId) {
     const addFolderBtn = document.createElement('button');
     addFolderBtn.className = 'menu_button';
     addFolderBtn.innerHTML = '<i class="fa-solid fa-plus"></i>&nbsp;&nbsp;Add Folder';
+    addFolderBtn.style.whiteSpace = 'nowrap';
+    addFolderBtn.style.overflow = 'hidden';
+    addFolderBtn.style.textOverflow = 'ellipsis';
     addFolderBtn.addEventListener('click', async () => {
         const folderName = prompt('Enter folder name:');
         if (folderName && folderName.trim()) {

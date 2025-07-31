@@ -636,6 +636,15 @@
     text-overflow: ellipsis;
 }
 
+/* Folder management modal button styles */
+.popup .menu_button,
+.popup_text .menu_button,
+div[class*="popup"] .menu_button {
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Collapsed folder state */
 .character-folders-container .collapsible-section.collapsed .collapsible-content {
     display: none;
