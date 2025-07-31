@@ -4286,23 +4286,97 @@ function getCurrentChatName() {
             selected_group: context.selected_group,
             this_chid: context.this_chid,
             groups_length: context.groups?.length,
-            characters_length: context.characters?.length
+            characters_length: context.characters?.length,
+            // Check all possible chat-related properties
+            chat_metadata: context.chat_metadata,
+            currentChatName: context.currentChatName,
+            chat_name: context.chat_name,
+            sessionName: context.sessionName,
+            chat: context.chat,
+            characterId: context.characterId,
+            character_id: context.character_id
         });
         
-        // Use the same logic as SillyTavern's getCurrentChatDetails
+        // Log all available properties to find the right one
+        console.log('ChatPlus: All context properties:', Object.keys(context));
+        
+        // Try multiple methods to get current chat name
+        let currentChatName = null;
+        
+        // Method 1: SillyTavern's getCurrentChatDetails logic
         if (context.selected_group) {
             const group = context.groups?.find(x => x.id === context.selected_group);
-            const chatId = group?.chat_id || null;
-            console.log('ChatPlus: Group chat detected, chat_id:', chatId);
-            return chatId;
+            currentChatName = group?.chat_id || null;
+            console.log('ChatPlus: Method 1 - Group chat detected, chat_id:', currentChatName);
         } else if (context.characters && context.this_chid !== undefined) {
-            const chatName = context.characters[context.this_chid]?.chat || null;
-            console.log('ChatPlus: Character chat detected, chat name:', chatName);
-            return chatName;
+            currentChatName = context.characters[context.this_chid]?.chat || null;
+            console.log('ChatPlus: Method 1 - Character chat detected, chat name:', currentChatName);
         }
         
-        console.log('ChatPlus: No current chat found');
-        return null;
+        // Method 2: Try direct properties
+        if (!currentChatName) {
+            currentChatName = context.currentChatName || context.chat_name || context.sessionName || context.chat || null;
+            console.log('ChatPlus: Method 2 - Direct properties, found:', currentChatName);
+        }
+        
+        // Method 3: Try chat_metadata
+        if (!currentChatName && context.chat_metadata) {
+            currentChatName = context.chat_metadata.chat_name || context.chat_metadata.sessionName || null;
+            console.log('ChatPlus: Method 3 - chat_metadata, found:', currentChatName);
+        }
+        
+        // Method 4: Try global window variables
+        if (!currentChatName) {
+            try {
+                // Check global variables that SillyTavern might use
+                const globalVars = {
+                    this_chid: window.this_chid,
+                    selected_group: window.selected_group,
+                    characters: window.characters,
+                    groups: window.groups,
+                    chat_metadata: window.chat_metadata,
+                    currentChatName: window.currentChatName,
+                    sessionName: window.sessionName
+                };
+                console.log('ChatPlus: Method 4 - Global variables:', globalVars);
+                
+                if (window.selected_group && window.groups) {
+                    const group = window.groups.find(x => x.id === window.selected_group);
+                    currentChatName = group?.chat_id || null;
+                    console.log('ChatPlus: Method 4 - Global group chat:', currentChatName);
+                } else if (window.this_chid !== undefined && window.characters) {
+                    const char = Array.isArray(window.characters) ? 
+                        window.characters[window.this_chid] : 
+                        window.characters[window.this_chid];
+                    currentChatName = char?.chat || null;
+                    console.log('ChatPlus: Method 4 - Global character chat:', currentChatName);
+                }
+            } catch (e) {
+                console.log('ChatPlus: Method 4 failed:', e.message);
+            }
+        }
+        
+        // Method 5: Try to get from DOM (last resort)
+        if (!currentChatName) {
+            try {
+                // Check if there's a chat currently loaded in the UI
+                const chatDisplay = document.querySelector('#chat_name, .chat_name, [data-chat-name]');
+                if (chatDisplay) {
+                    currentChatName = chatDisplay.textContent || chatDisplay.getAttribute('data-chat-name');
+                    console.log('ChatPlus: Method 5 - DOM extraction, found:', currentChatName);
+                }
+            } catch (e) {
+                console.log('ChatPlus: Method 5 failed:', e.message);
+            }
+        }
+        
+        if (currentChatName) {
+            console.log('ChatPlus: ✅ Successfully found current chat:', currentChatName);
+        } else {
+            console.log('ChatPlus: ❌ No current chat found with any method');
+        }
+        
+        return currentChatName;
     } catch (error) {
         console.error('ChatPlus: Error getting current chat name:', error);
         return null;
