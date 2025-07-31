@@ -592,9 +592,23 @@ function createCharacterChatElement(characterId, chat) {
     
     // Check if this is the current chat and add highlight attribute (same as SillyTavern)
     const currentChat = getCurrentChatName();
-    if (currentChat && trimChatExtension(currentChat) === trimChatExtension(chat.file_name)) {
-        chatBlock.setAttribute('highlight', 'true');
-        console.log('ChatPlus: Current chat highlighted in folder view:', chat.file_name);
+    const currentTrimmed = trimChatExtension(currentChat);
+    const chatTrimmed = trimChatExtension(chat.file_name);
+    const isSelected = currentChat && currentTrimmed === chatTrimmed;
+    
+    console.log('ChatPlus: Checking highlight for chat:', {
+        chat_file: chat.file_name,
+        current_chat: currentChat,
+        current_trimmed: currentTrimmed,
+        chat_trimmed: chatTrimmed,
+        is_selected: isSelected
+    });
+    
+    if (isSelected) {
+        chatBlock.setAttribute('highlight', String(true));
+        console.log('ChatPlus: ✅ Current chat highlighted in folder view:', chat.file_name);
+    } else {
+        console.log('ChatPlus: ❌ Chat NOT highlighted:', chat.file_name);
     }
     
     // Make it clickable to load the chat
@@ -4088,8 +4102,20 @@ async function renderListView(characterId) {
         // Render chats using original SillyTavern template style
         const currentChat = getCurrentChatName(); // Get current chat name if available
         
+        console.log('ChatPlus: renderListView - currentChat from getCurrentChatName():', currentChat);
+        
         characterChats.forEach(chat => {
-            const isSelected = currentChat && currentChat === chat.file_name;
+            // Use same comparison logic as SillyTavern (with trimExtension)
+            const isSelected = currentChat && trimChatExtension(currentChat) === trimChatExtension(chat.file_name);
+            
+            console.log('ChatPlus: renderListView comparing chat:', {
+                chat_file: chat.file_name,
+                current_chat: currentChat,
+                current_trimmed: trimChatExtension(currentChat),
+                chat_trimmed: trimChatExtension(chat.file_name),
+                is_selected: isSelected
+            });
+            
             const chatElement = createListChatElement(chat, isSelected, character);
             selectChatDiv.appendChild(chatElement);
         });
@@ -4122,8 +4148,16 @@ function createListChatElement(chat, isSelected, character) {
     chatBlock.className = 'select_chat_block wide100p flex-container';
     chatBlock.setAttribute('file_name', chat.file_name);
     
+    console.log('ChatPlus: List view chat highlight check:', {
+        chat_file: chat.file_name,
+        is_selected: isSelected
+    });
+    
     if (isSelected) {
-        chatBlock.setAttribute('highlight', 'true');
+        chatBlock.setAttribute('highlight', String(true));
+        console.log('ChatPlus: ✅ Current chat highlighted in list view:', chat.file_name);
+    } else {
+        console.log('ChatPlus: ❌ Chat NOT highlighted in list view:', chat.file_name);
     }
     
     // Add click handler to load chat
@@ -4243,16 +4277,31 @@ function createListChatElement(chat, isSelected, character) {
 function getCurrentChatName() {
     try {
         const context = SillyTavern?.getContext();
-        if (!context) return null;
+        if (!context) {
+            console.log('ChatPlus: No SillyTavern context available');
+            return null;
+        }
+        
+        console.log('ChatPlus: Context data:', {
+            selected_group: context.selected_group,
+            this_chid: context.this_chid,
+            groups_length: context.groups?.length,
+            characters_length: context.characters?.length
+        });
         
         // Use the same logic as SillyTavern's getCurrentChatDetails
         if (context.selected_group) {
             const group = context.groups?.find(x => x.id === context.selected_group);
-            return group?.chat_id || null;
+            const chatId = group?.chat_id || null;
+            console.log('ChatPlus: Group chat detected, chat_id:', chatId);
+            return chatId;
         } else if (context.characters && context.this_chid !== undefined) {
-            return context.characters[context.this_chid]?.chat || null;
+            const chatName = context.characters[context.this_chid]?.chat || null;
+            console.log('ChatPlus: Character chat detected, chat name:', chatName);
+            return chatName;
         }
         
+        console.log('ChatPlus: No current chat found');
         return null;
     } catch (error) {
         console.error('ChatPlus: Error getting current chat name:', error);
@@ -4266,7 +4315,9 @@ function getCurrentChatName() {
  * @returns {string} Trimmed file name.
  */
 function trimChatExtension(fileName) {
-    return String(fileName || '').replace('.jsonl', '');
+    const trimmed = String(fileName).replace('.jsonl', '');
+    console.log('ChatPlus: trimChatExtension:', fileName, '->', trimmed);
+    return trimmed;
 }
 
 /**
