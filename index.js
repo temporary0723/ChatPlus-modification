@@ -3706,19 +3706,30 @@ function handleCharacterPageLoaded() {
 (() => {
     console.log('ChatPlus: Initializing character folder integration');
     
+    // Debouncing to prevent multiple calls
+    let toggleTimeout = null;
+    
+    const debouncedAddToggle = () => {
+        if (toggleTimeout) {
+            clearTimeout(toggleTimeout);
+        }
+        toggleTimeout = setTimeout(() => {
+            addCharacterFolderViewToggle();
+        }, 300);
+    };
+    
     // Use MutationObserver to detect when chat modal appears
     const observeForChatModal = () => {
         const observer = new MutationObserver((mutations) => {
+            let shouldAddToggle = false;
+            
             mutations.forEach((mutation) => {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                     const target = mutation.target;
                     if (target.id === 'shadow_select_chat_popup') {
                         const displayStyle = target.style.display;
                         if (displayStyle === 'block' || displayStyle === '') {
-                            console.log('ChatPlus: Chat modal detected as visible');
-                            setTimeout(() => {
-                                addCharacterFolderViewToggle();
-                            }, 200);
+                            shouldAddToggle = true;
                         }
                     }
                 }
@@ -3729,15 +3740,17 @@ function handleCharacterPageLoaded() {
                         if (node.nodeType === Node.ELEMENT_NODE) {
                             if (node.id === 'shadow_select_chat_popup' || 
                                 node.querySelector && node.querySelector('#shadow_select_chat_popup')) {
-                                console.log('ChatPlus: Chat modal element added to DOM');
-                                setTimeout(() => {
-                                    addCharacterFolderViewToggle();
-                                }, 200);
+                                shouldAddToggle = true;
                             }
                         }
                     });
                 }
             });
+            
+            // Only trigger once per batch of mutations
+            if (shouldAddToggle) {
+                debouncedAddToggle();
+            }
         });
         
         // Start observing
@@ -3772,10 +3785,7 @@ function handleCharacterPageLoaded() {
  * Add folder view toggle to the character chat modal.
  */
 function addCharacterFolderViewToggle() {
-    console.log('ChatPlus: addCharacterFolderViewToggle called');
-    
     const header = document.querySelector('div[name="selectChatPopupHeader"]');
-    console.log('ChatPlus: Found header element:', header);
     
     if (!header) {
         console.log('ChatPlus: Header not found, cannot add toggle');
@@ -3784,9 +3794,10 @@ function addCharacterFolderViewToggle() {
     
     // Check if toggle already exists
     if (document.getElementById('chatplus-character-view-toggle')) {
-        console.log('ChatPlus: Toggle already exists');
-        return;
+        return; // Silently return if toggle already exists
     }
+    
+    console.log('ChatPlus: Adding folder view toggle');
     
     // Create view toggle container
     const toggleContainer = document.createElement('div');
@@ -3836,28 +3847,48 @@ function addCharacterFolderViewToggle() {
         localStorage.setItem('chatplus_character_view_mode', 'list');
         updateButtonStates('list');
         
-        // Trigger displayPastChats to refresh list view
+        console.log('ChatPlus: Switching to list view');
+        
+        // Method 1: Try to call displayPastChats directly
         try {
             const context = SillyTavern?.getContext();
-            if (context && context.displayPastChats) {
+            if (context && typeof context.displayPastChats === 'function') {
+                console.log('ChatPlus: Calling context.displayPastChats');
                 await context.displayPastChats();
-            } else {
-                // Fallback: just reload the page content by clearing and letting it rebuild
-                const selectChatDiv = document.getElementById('select_chat_div');
-                if (selectChatDiv) {
-                    selectChatDiv.innerHTML = '<div style="text-align: center; padding: 20px;">Loading...</div>';
-                }
-                // Try to call displayPastChats after a delay
-                setTimeout(async () => {
-                    if (window.displayPastChats) {
-                        await window.displayPastChats();
-                    }
-                }, 100);
+                return; // Success, exit early
             }
-            // Re-add the toggle after refresh
-            setTimeout(() => addCharacterFolderViewToggle(), 100);
         } catch (error) {
-            console.error('ChatPlus: Error refreshing list view:', error);
+            console.warn('ChatPlus: context.displayPastChats failed:', error);
+        }
+        
+        // Method 2: Try window.displayPastChats
+        try {
+            if (typeof window.displayPastChats === 'function') {
+                console.log('ChatPlus: Calling window.displayPastChats');
+                await window.displayPastChats();
+                return; // Success, exit early
+            }
+        } catch (error) {
+            console.warn('ChatPlus: window.displayPastChats failed:', error);
+        }
+        
+        // Method 3: Manual reconstruction using fetch API
+        console.log('ChatPlus: Using manual list reconstruction');
+        const selectChatDiv = document.getElementById('select_chat_div');
+        if (selectChatDiv) {
+            selectChatDiv.innerHTML = '<div style="text-align: center; padding: 20px;">Loading list view...</div>';
+            
+            try {
+                const currentCharacterId = getCurrentCharacterId();
+                if (currentCharacterId) {
+                    await renderListView(currentCharacterId);
+                } else {
+                    selectChatDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">Could not load list view. Please refresh the page.</div>';
+                }
+            } catch (error) {
+                console.error('ChatPlus: Manual list reconstruction failed:', error);
+                selectChatDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">Error loading list view. Please refresh the page.</div>';
+            }
         }
     });
     
@@ -3884,7 +3915,7 @@ function addCharacterFolderViewToggle() {
     // Insert after the header
     header.parentNode.insertBefore(toggleContainer, header.nextSibling);
     
-    console.log('ChatPlus: Toggle added successfully');
+    console.log('ChatPlus: Folder view toggle ready');
     
     // If we're already in folder mode, switch to it
     if (currentMode === 'folder') {
@@ -3892,6 +3923,225 @@ function addCharacterFolderViewToggle() {
         if (currentCharacterId !== undefined && currentCharacterId !== null) {
             setTimeout(() => renderCharacterFolderView(currentCharacterId), 200);
         }
+    }
+}
+
+/**
+ * Render list view manually (fallback when displayPastChats doesn't work).
+ * @param {string} characterId - Character ID.
+ */
+async function renderListView(characterId) {
+    console.log('ChatPlus: renderListView called with ID:', characterId);
+    
+    const selectChatDiv = document.getElementById('select_chat_div');
+    if (!selectChatDiv) return;
+    
+    selectChatDiv.innerHTML = '';
+    
+    const context = SillyTavern.getContext();
+    let characterChats = [];
+    
+    try {
+        // Get character info
+        let character = null;
+        if (context?.characters) {
+            if (Array.isArray(context.characters)) {
+                const charIndex = parseInt(characterId);
+                if (!isNaN(charIndex) && charIndex >= 0 && charIndex < context.characters.length) {
+                    character = context.characters[charIndex];
+                }
+            } else {
+                character = context.characters[characterId];
+            }
+        }
+        
+        if (character && character.avatar) {
+            console.log('ChatPlus: Loading chats for character:', character.name);
+            
+            const response = await fetch('/api/chats/search', {
+                method: 'POST',
+                headers: context.getRequestHeaders(),
+                body: JSON.stringify({
+                    query: '',
+                    avatar_url: character.avatar,
+                    group_id: null,
+                }),
+            });
+            
+            if (response.ok) {
+                characterChats = await response.json();
+                console.log('ChatPlus: Loaded', characterChats.length, 'chats for list view');
+                
+                // Sort chats by timestamp (most recent first)
+                characterChats.sort((a, b) => {
+                    const timeA = a.last_mes || 0;
+                    const timeB = b.last_mes || 0;
+                    return timeB - timeA;
+                });
+            }
+        }
+        
+        // Render chats using original SillyTavern template style
+        const currentChat = getCurrentChatName(); // Get current chat name if available
+        
+        characterChats.forEach(chat => {
+            const isSelected = currentChat && currentChat === chat.file_name;
+            const chatElement = createListChatElement(chat, isSelected, character);
+            selectChatDiv.appendChild(chatElement);
+        });
+        
+        console.log('ChatPlus: List view rendered successfully');
+        
+    } catch (error) {
+        console.error('ChatPlus: Error in renderListView:', error);
+        selectChatDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #888;">
+                <div style="font-size: 18px; margin-bottom: 10px;">❌ Error loading list view</div>
+                <div>Failed to load chat data: ${error.message}</div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Create a chat element for list view (similar to original SillyTavern style).
+ * @param {Object} chat - Chat object.
+ * @param {boolean} isSelected - Whether this chat is currently selected.
+ * @param {Object} character - Character object.
+ * @returns {HTMLElement} Chat element.
+ */
+function createListChatElement(chat, isSelected, character) {
+    const template = document.createElement('div');
+    template.className = 'select_chat_block_wrapper flex-container';
+    
+    const chatBlock = document.createElement('div');
+    chatBlock.className = 'select_chat_block wide100p flex-container';
+    chatBlock.setAttribute('file_name', chat.file_name);
+    
+    if (isSelected) {
+        chatBlock.setAttribute('highlight', 'true');
+    }
+    
+    // Add click handler to load chat
+    chatBlock.addEventListener('click', () => {
+        console.log('ChatPlus: Loading chat:', chat.file_name);
+        
+        // Try multiple ways to load the chat
+        if (window.loadFileToChat) {
+            window.loadFileToChat(chat.file_name);
+        } else if (window.selectCharacterById) {
+            // Use original SillyTavern method
+            const event = new CustomEvent('chat_selected', { detail: { file_name: chat.file_name } });
+            document.dispatchEvent(event);
+        }
+        
+        // Close modal
+        const modal = document.getElementById('shadow_select_chat_popup');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    const nameWrapper = document.createElement('div');
+    nameWrapper.id = 'select_chat_name_wrapper';
+    nameWrapper.className = 'flex-container alignitemscenter justifySpaceBetween wide100p';
+    
+    const leftDiv = document.createElement('div');
+    leftDiv.className = 'flex-container alignItemsCenter';
+    
+    const fileName = document.createElement('small');
+    fileName.className = 'select_chat_block_filename select_chat_block_filename_item';
+    fileName.textContent = chat.file_name;
+    leftDiv.appendChild(fileName);
+    
+    // Add rename button (like original)
+    const renameBtn = document.createElement('div');
+    renameBtn.className = 'renameChatButton hoverglow opacity50p fa-solid fa-pencil fa-sm';
+    renameBtn.title = 'Rename chat file';
+    renameBtn.style.marginLeft = '8px';
+    leftDiv.appendChild(renameBtn);
+    
+    nameWrapper.appendChild(leftDiv);
+    
+    const rightDiv = document.createElement('div');
+    rightDiv.className = 'flex-container gap10px alignItemsCenter';
+    
+    // Chat info
+    const chatInfo = document.createElement('div');
+    chatInfo.className = 'select_chat_info flex-container';
+    
+    if (chat.last_mes) {
+        const dateSpan = document.createElement('small');
+        dateSpan.className = 'chat_messages_date select_chat_block_filename_item';
+        dateSpan.textContent = new Date(chat.last_mes).toLocaleString();
+        chatInfo.appendChild(dateSpan);
+    }
+    
+    if (chat.file_size) {
+        const sizeSpan = document.createElement('small');
+        sizeSpan.className = 'chat_file_size select_chat_block_filename_item';
+        sizeSpan.textContent = `(${chat.file_size},`;
+        chatInfo.appendChild(sizeSpan);
+    }
+    
+    if (chat.message_count) {
+        const countSpan = document.createElement('small');
+        countSpan.className = 'chat_messages_num select_chat_block_filename_item';
+        countSpan.textContent = `${chat.message_count} 💬)`;
+        chatInfo.appendChild(countSpan);
+    }
+    
+    rightDiv.appendChild(chatInfo);
+    
+    // Add action buttons (export, delete, etc.)
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'flex-container gap10px';
+    
+    const exportBtn = document.createElement('div');
+    exportBtn.className = 'exportRawChatButton opacity50p hoverglow fa-solid fa-file-export';
+    exportBtn.title = 'Export JSONL chat file';
+    exportBtn.setAttribute('data-format', 'jsonl');
+    actionsDiv.appendChild(exportBtn);
+    
+    const exportTxtBtn = document.createElement('div');
+    exportTxtBtn.className = 'exportChatButton opacity50p hoverglow fa-solid fa-file-lines';
+    exportTxtBtn.title = 'Download chat as plain text document';
+    exportTxtBtn.setAttribute('data-format', 'txt');
+    actionsDiv.appendChild(exportTxtBtn);
+    
+    const deleteBtn = document.createElement('div');
+    deleteBtn.className = 'PastChat_cross opacity50p hoverglow fa-solid fa-skull';
+    deleteBtn.title = 'Delete chat file';
+    deleteBtn.setAttribute('file_name', chat.file_name);
+    actionsDiv.appendChild(deleteBtn);
+    
+    rightDiv.appendChild(actionsDiv);
+    nameWrapper.appendChild(rightDiv);
+    
+    chatBlock.appendChild(nameWrapper);
+    
+    // Preview message
+    if (chat.preview_message) {
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'select_chat_block_mes';
+        previewDiv.textContent = chat.preview_message;
+        chatBlock.appendChild(previewDiv);
+    }
+    
+    template.appendChild(chatBlock);
+    return template;
+}
+
+/**
+ * Get current chat name (if any).
+ * @returns {string|null} Current chat name.
+ */
+function getCurrentChatName() {
+    try {
+        const context = SillyTavern?.getContext();
+        return context?.currentChatName || context?.chat_name || null;
+    } catch (error) {
+        return null;
     }
 }
 
