@@ -406,6 +406,14 @@ function renderCharacterChatFoldersUI(characterId, container, folderedChats, fol
         actionButtons.style.gap = '6px';
         actionButtons.style.marginLeft = 'auto';
         
+        // Add plus icon for managing chats in folder
+        const plusIcon = document.createElement('i');
+        plusIcon.className = 'fa-solid fa-plus folder-manage-icon';
+        plusIcon.style.cursor = 'pointer';
+        plusIcon.style.padding = '4px';
+        plusIcon.title = 'Manage chats in folder';
+        actionButtons.appendChild(plusIcon);
+        
         // Add pencil icon for renaming
         const pencilIcon = document.createElement('i');
         pencilIcon.className = 'fa-solid fa-pencil-alt folder-rename-icon';
@@ -440,6 +448,12 @@ function renderCharacterChatFoldersUI(characterId, container, folderedChats, fol
             }
         });
         
+        // Manage chats in folder functionality
+        plusIcon.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await showManageFolderChatsModal(characterId, folder);
+        });
+        
         // Rename folder functionality
         pencilIcon.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -471,6 +485,223 @@ function renderCharacterChatFoldersUI(characterId, container, folderedChats, fol
             renderCharacterChatFoldersUI(characterId, content, folderedChats, folder.children, level + 1);
         }
     });
+}
+
+/**
+ * Show modal to manage chats in a folder.
+ * @param {string} characterId - Character ID.
+ * @param {Object} folder - Folder object.
+ */
+async function showManageFolderChatsModal(characterId, folder) {
+    // Get all character chats
+    const context = SillyTavern.getContext();
+    let characterChats = [];
+    
+    try {
+        let character = null;
+        if (context?.characters) {
+            if (Array.isArray(context.characters)) {
+                const charIndex = parseInt(characterId);
+                if (!isNaN(charIndex) && charIndex >= 0 && charIndex < context.characters.length) {
+                    character = context.characters[charIndex];
+                }
+            } else {
+                character = context.characters[characterId];
+            }
+        }
+        
+        if (character && character.avatar) {
+            const response = await fetch('/api/chats/search', {
+                method: 'POST',
+                headers: context.getRequestHeaders(),
+                body: JSON.stringify({
+                    query: '',
+                    avatar_url: character.avatar,
+                    group_id: null,
+                }),
+            });
+            
+            if (response.ok) {
+                characterChats = await response.json();
+                // Sort by timestamp (most recent first)
+                characterChats.sort((a, b) => {
+                    const timeA = a.last_mes || 0;
+                    const timeB = b.last_mes || 0;
+                    return timeB - timeA;
+                });
+            }
+        }
+    } catch (error) {
+        console.error('ChatPlus: Failed to fetch character chats:', error);
+    }
+    
+    if (characterChats.length === 0) {
+        toastr.warning('No chats found for this character.');
+        return;
+    }
+    
+    // Get current chats in this folder
+    const chatFoldersMap = getCharacterChatFoldersMap(characterId);
+    const chatsInFolder = new Set();
+    Object.entries(chatFoldersMap).forEach(([fileName, folderIds]) => {
+        if (folderIds.includes(folder.id)) {
+            chatsInFolder.add(fileName);
+        }
+    });
+    
+    // Create modal content
+    const content = document.createElement('div');
+    content.innerHTML = `<h3 style="margin-bottom: 15px;">Manage chats in "${folder.name}"</h3>`;
+    
+    // Create scrollable chat list container
+    const chatListContainer = document.createElement('div');
+    chatListContainer.style.cssText = `
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #444;
+        border-radius: 5px;
+        padding: 10px;
+        background: rgba(0,0,0,0.2);
+    `;
+    
+    // Create chat items with checkboxes
+    characterChats.forEach(chat => {
+        const chatItem = document.createElement('div');
+        chatItem.style.cssText = `
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+        `;
+        chatItem.addEventListener('mouseenter', () => {
+            chatItem.style.backgroundColor = 'rgba(74, 158, 255, 0.1)';
+        });
+        chatItem.addEventListener('mouseleave', () => {
+            chatItem.style.backgroundColor = '';
+        });
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = chatsInFolder.has(chat.file_name);
+        checkbox.dataset.fileName = chat.file_name;
+        checkbox.style.cssText = `
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            flex-shrink: 0;
+        `;
+        
+        const chatInfo = document.createElement('div');
+        chatInfo.style.cssText = `
+            flex: 1;
+            overflow: hidden;
+        `;
+        
+        const chatName = document.createElement('div');
+        chatName.textContent = chat.file_name.replace('.jsonl', '');
+        chatName.style.cssText = `
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        `;
+        
+        const chatMeta = document.createElement('div');
+        const messageCount = chat.mes || chat.message_count || '?';
+        const lastMessage = chat.last_mes ? new Date(chat.last_mes).toLocaleString() : 'Unknown';
+        chatMeta.textContent = `${messageCount} messages • ${lastMessage}`;
+        chatMeta.style.cssText = `
+            font-size: 0.85em;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        `;
+        
+        chatInfo.appendChild(chatName);
+        chatInfo.appendChild(chatMeta);
+        
+        chatItem.appendChild(checkbox);
+        chatItem.appendChild(chatInfo);
+        
+        // Click on item toggles checkbox
+        chatItem.addEventListener('click', (e) => {
+            if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+        });
+        
+        chatListContainer.appendChild(chatItem);
+    });
+    
+    content.appendChild(chatListContainer);
+    
+    // Add select all / deselect all buttons
+    const buttonRow = document.createElement('div');
+    buttonRow.style.cssText = `
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    `;
+    
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.className = 'menu_button';
+    selectAllBtn.textContent = 'Select All';
+    selectAllBtn.style.flex = '1';
+    selectAllBtn.addEventListener('click', () => {
+        chatListContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    });
+    
+    const deselectAllBtn = document.createElement('button');
+    deselectAllBtn.className = 'menu_button';
+    deselectAllBtn.textContent = 'Deselect All';
+    deselectAllBtn.style.flex = '1';
+    deselectAllBtn.addEventListener('click', () => {
+        chatListContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    });
+    
+    buttonRow.appendChild(selectAllBtn);
+    buttonRow.appendChild(deselectAllBtn);
+    content.appendChild(buttonRow);
+    
+    // Show popup
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        okButton: t`Confirm`,
+        cancelButton: t`Cancel`,
+        wide: true
+    });
+    
+    const result = await popup.show();
+    
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        // Get all checkboxes and update folder assignments
+        const checkboxes = chatListContainer.querySelectorAll('input[type="checkbox"]');
+        let changed = false;
+        
+        checkboxes.forEach(checkbox => {
+            const fileName = checkbox.dataset.fileName;
+            const wasInFolder = chatsInFolder.has(fileName);
+            const isChecked = checkbox.checked;
+            
+            if (isChecked && !wasInFolder) {
+                // Add to folder
+                assignChatToCharacterFolder(characterId, fileName, folder.id);
+                changed = true;
+            } else if (!isChecked && wasInFolder) {
+                // Remove from folder
+                removeChatFromCharacterFolder(characterId, fileName, folder.id);
+                changed = true;
+            }
+        });
+        
+        if (changed) {
+            toastr.success(`Updated chats in "${folder.name}"`);
+            // Refresh the character chat modal
+            await refreshCharacterChatModal(characterId);
+        }
+    }
 }
 
 /**
