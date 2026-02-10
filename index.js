@@ -3962,9 +3962,6 @@ function addCharacterFolderViewToggle() {
     folderViewBtn.innerHTML = '<i class="fa-solid fa-folder"></i>&nbsp;&nbsp;Folder View';
     folderViewBtn.style.cssText = 'flex: 1; margin: 0;';
     
-    // Get current view mode
-    const currentMode = localStorage.getItem('chatplus_character_view_mode') || 'list';
-    
     // Update button states
     const updateButtonStates = (mode) => {
         if (mode === 'folder') {
@@ -3976,7 +3973,9 @@ function addCharacterFolderViewToggle() {
         }
     };
     
-    updateButtonStates(currentMode);
+    // Always start with list view
+    localStorage.setItem('chatplus_character_view_mode', 'list');
+    updateButtonStates('list');
     
     // Add event listeners
     listViewBtn.addEventListener('click', async () => {
@@ -4050,16 +4049,6 @@ function addCharacterFolderViewToggle() {
     
     // Insert after the header
     header.parentNode.insertBefore(toggleContainer, header.nextSibling);
-    
-
-    
-    // If we're already in folder mode, switch to it
-    if (currentMode === 'folder') {
-        const currentCharacterId = getCurrentCharacterId();
-        if (currentCharacterId !== undefined && currentCharacterId !== null) {
-            setTimeout(() => renderCharacterFolderView(currentCharacterId), 200);
-        }
-    }
 }
 
 /**
