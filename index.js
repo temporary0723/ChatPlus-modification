@@ -3885,6 +3885,11 @@ function handleCharacterPageLoaded() {
             
             // Only trigger once per batch of mutations
             if (shouldAddToggle) {
+                // Remove existing toggle to reset to list view when modal opens
+                const existingToggle = document.getElementById('chatplus-character-view-toggle');
+                if (existingToggle) {
+                    existingToggle.remove();
+                }
                 debouncedAddToggle();
             }
         });
@@ -3929,17 +3934,8 @@ function addCharacterFolderViewToggle() {
     }
     
     // Check if toggle already exists
-    const existingToggle = document.getElementById('chatplus-character-view-toggle');
-    if (existingToggle) {
-        // Toggle exists - just reset to list view state
-        const listBtn = existingToggle.querySelector('button:first-child');
-        const folderBtn = existingToggle.querySelector('button:last-child');
-        if (listBtn && folderBtn) {
-            listBtn.style.backgroundColor = '#4a9eff';
-            folderBtn.style.backgroundColor = '';
-            localStorage.setItem('chatplus_character_view_mode', 'list');
-        }
-        return;
+    if (document.getElementById('chatplus-character-view-toggle')) {
+        return; // Silently return if toggle already exists
     }
     
 
