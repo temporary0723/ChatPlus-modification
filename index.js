@@ -4171,42 +4171,25 @@ function addCharacterFolderViewToggle() {
     
 
     
-    // Create view toggle container
+    // Create view toggle container (styling handled in style.css)
     const toggleContainer = document.createElement('div');
     toggleContainer.id = 'chatplus-character-view-toggle';
-    toggleContainer.style.cssText = `
-        display: flex;
-        gap: 5px;
-        margin-top: 10px;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #444;
-        border-radius: 5px;
-        background: rgba(0,0,0,0.3);
-        padding: 5px;
-    `;
     
     // List view button
     const listViewBtn = document.createElement('button');
     listViewBtn.className = 'menu_button';
     listViewBtn.innerHTML = '<i class="fa-solid fa-list"></i>&nbsp;&nbsp;List View';
-    listViewBtn.style.cssText = 'flex: 1; margin: 0;';
     
     // Folder view button
     const folderViewBtn = document.createElement('button');
     folderViewBtn.className = 'menu_button';
     folderViewBtn.innerHTML = '<i class="fa-solid fa-folder"></i>&nbsp;&nbsp;Folder View';
-    folderViewBtn.style.cssText = 'flex: 1; margin: 0;';
     
-    // Update button states
+    // Update button states via CSS class (theme-aware)
     const updateButtonStates = (mode) => {
-        if (mode === 'folder') {
-            folderViewBtn.style.backgroundColor = '#4a9eff';
-            listViewBtn.style.backgroundColor = '';
-        } else {
-            listViewBtn.style.backgroundColor = '#4a9eff';
-            folderViewBtn.style.backgroundColor = '';
-        }
+        const folderActive = mode === 'folder';
+        folderViewBtn.classList.toggle('active', folderActive);
+        listViewBtn.classList.toggle('active', !folderActive);
     };
     
     // Always start with list view

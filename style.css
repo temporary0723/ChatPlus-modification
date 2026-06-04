@@ -496,118 +496,175 @@
     gap: 5px;
 }
 
+/* ===== ChatPlus character folder view — refined theme ===== */
+.character-folders-container {
+    --cp-accent: var(--SmartThemeQuoteColor, #4a9eff);
+    --cp-border: color-mix(in srgb, var(--SmartThemeBodyColor, #cccccc) 14%, transparent);
+    --cp-border-strong: color-mix(in srgb, var(--SmartThemeBodyColor, #cccccc) 22%, transparent);
+    --cp-surface: color-mix(in srgb, var(--SmartThemeBodyColor, #ffffff) 4%, transparent);
+    --cp-surface-hover: color-mix(in srgb, var(--SmartThemeBodyColor, #ffffff) 9%, transparent);
+    --cp-danger: var(--SmartThemeDangerColor, #ff5c6c);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 2px;
+}
+
 .character-folders-container .collapsible-section {
-    border: 1px solid #444;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--cp-border);
+    border-radius: 10px;
+    margin-bottom: 0;
+    background: var(--cp-surface);
+    box-shadow: none;
+    overflow: hidden;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.character-folders-container .collapsible-section:not(.collapsed) {
+    border-color: var(--cp-border-strong);
+    box-shadow: 0 4px 16px -8px color-mix(in srgb, var(--cp-accent) 50%, transparent);
 }
 
 .character-folders-container .collapsible-header {
-    padding: 12px;
+    padding: 11px 13px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px 6px 0 0;
-    transition: background-color 0.2s;
+    background: transparent;
+    border-radius: 0;
+    border-bottom: 1px solid transparent;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+    margin-top: 0;
+    position: relative;
+}
+
+.character-folders-container .collapsible-section:not(.collapsed) .collapsible-header {
+    border-bottom-color: var(--cp-border);
 }
 
 .character-folders-container .collapsible-header:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--cp-surface-hover);
+}
+
+.character-folders-container .collapsible-header .chevron {
+    color: var(--cp-accent);
+    font-size: 0.85em;
+    opacity: 0.85;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.character-folders-container .collapsible-header:hover .chevron {
+    opacity: 1;
 }
 
 .character-folders-container .collapsible-content {
     padding: 8px;
-    border-top: 1px solid #444;
+    border-top: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .character-folders-container .folder-title {
     flex: 1;
     margin-left: 8px;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.2px;
 }
 
 .character-folders-container .folder-action-buttons {
     display: flex;
-    gap: 6px;
+    gap: 2px;
     margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.18s ease;
 }
 
-.character-folders-container .folder-rename-icon {
-    opacity: 0.7;
-    transition: opacity 0.2s, color 0.2s;
-    border-radius: 3px;
+.character-folders-container .collapsible-header:hover .folder-action-buttons,
+.character-folders-container .collapsible-section:not(.collapsed) .folder-action-buttons {
+    opacity: 1;
 }
 
+.character-folders-container .folder-manage-icon,
+.character-folders-container .folder-rename-icon,
+.character-folders-container .folder-delete-icon {
+    opacity: 0.6;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    border-radius: 6px;
+    font-size: 0.85em;
+    transition: opacity 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+}
+
+.character-folders-container .folder-manage-icon:hover,
 .character-folders-container .folder-rename-icon:hover {
     opacity: 1;
-    color: #4a9eff;
-    background: rgba(74, 158, 255, 0.1);
-}
-
-.character-folders-container .folder-delete-icon {
-    opacity: 0.7;
-    transition: opacity 0.2s, color 0.2s, background-color 0.2s;
-    border-radius: 3px;
+    color: var(--cp-accent);
+    background: color-mix(in srgb, var(--cp-accent) 16%, transparent);
 }
 
 .character-folders-container .folder-delete-icon:hover {
     opacity: 1;
-    color: #ff4757;
-    background: rgba(255, 71, 87, 0.1);
+    color: var(--cp-danger) !important;
+    background: color-mix(in srgb, var(--cp-danger) 16%, transparent);
 }
 
 .character-folders-container .select_chat_block_wrapper {
-    margin-bottom: 8px;
-    border: 1px solid #333;
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.3);
-    transition: background-color 0.2s;
+    margin-bottom: 0;
+    border: 1px solid var(--cp-border);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--SmartThemeBlurTintColor, #000000) 22%, transparent);
+    transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.12s ease;
 }
 
 .character-folders-container .select_chat_block_wrapper:hover {
-    background: rgba(0, 0, 0, 0.5);
-    border-color: #4a9eff;
+    background: var(--cp-surface-hover);
+    border-color: color-mix(in srgb, var(--cp-accent) 55%, transparent);
+    transform: translateY(-1px);
 }
 
 .character-folders-container .select_chat_block {
-    padding: 10px;
+    padding: 10px 12px;
     cursor: pointer;
 }
 
-/* Highlight current chat (same as SillyTavern) */
+/* Highlight current chat */
 .character-folders-container .select_chat_block[highlight] {
-    background-color: var(--cobalt30a) !important;
+    background-color: color-mix(in srgb, var(--cp-accent) 22%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--cp-accent);
+    border-radius: 8px;
 }
 
-/* Fallback for older SillyTavern versions without CSS variables */
-.character-folders-container .select_chat_block[highlight] {
-    background-color: rgba(74, 158, 255, 0.3) !important;
+.character-folders-container .select_chat_block_filename {
+    font-weight: 500;
 }
 
 .character-folders-container .fa-folder {
-    color: #4a9eff;
-    transition: color 0.2s;
+    color: var(--cp-accent);
+    transition: color 0.18s ease, opacity 0.18s ease;
 }
 
 .character-folders-container .fa-folder:hover {
-    color: #7bb3ff;
+    color: color-mix(in srgb, var(--cp-accent) 70%, #ffffff);
 }
 
 /* View toggle styles */
 #chatplus-character-view-toggle {
     display: flex;
-    gap: 3px;
+    gap: 4px;
     margin: 10px 15px;
     align-items: center;
     justify-content: center;
-    border: 1px solid #555;
-    border-radius: 8px;
-    background: rgba(0,0,0,0.4);
+    border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #cccccc) 16%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--SmartThemeBlurTintColor, #000000) 30%, transparent);
     padding: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    box-shadow: inset 0 1px 2px color-mix(in srgb, #000000 25%, transparent);
     /* Responsive: fill full width on narrow screens */
     width: calc(100% - 30px); /* Account for margin */
     box-sizing: border-box;
@@ -618,7 +675,11 @@
     margin: 0;
     padding: 8px 12px;
     font-size: 0.9em;
-    transition: background-color 0.2s;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    transition: background-color 0.18s ease, color 0.18s ease;
     /* Prevent text wrapping */
     white-space: nowrap;
     overflow: hidden;
@@ -626,14 +687,34 @@
 }
 
 #chatplus-character-view-toggle .menu_button:hover {
-    background-color: rgba(74, 158, 255, 0.5) !important;
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor, #4a9eff) 18%, transparent) !important;
+}
+
+#chatplus-character-view-toggle .menu_button.active,
+#chatplus-character-view-toggle .menu_button[data-active="true"] {
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor, #4a9eff) 35%, transparent) !important;
+    color: var(--SmartThemeBodyColor, #ffffff);
 }
 
 /* Add Folder button styles */
+.character-folders-container .folder-controls {
+    margin-bottom: 4px !important;
+}
+
 .character-folders-container .menu_button {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    border-radius: 8px;
+    font-weight: 500;
+    border: 1px solid color-mix(in srgb, var(--SmartThemeQuoteColor, #4a9eff) 40%, transparent);
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #4a9eff) 12%, transparent);
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.character-folders-container .menu_button:hover {
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #4a9eff) 26%, transparent);
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor, #4a9eff) 65%, transparent);
 }
 
 /* Folder management modal button styles */
@@ -650,8 +731,27 @@ div[class*="popup"] .menu_button {
     display: none;
 }
 
-.character-folders-container .collapsible-section.collapsed .collapsible-header {
-    border-radius: 6px;
+/* Uncategorized section */
+.character-folders-container .uncategorized-section {
+    margin-top: 6px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.character-folders-container .uncategorized-section .folder-header {
+    font-weight: 600 !important;
+    color: color-mix(in srgb, var(--SmartThemeBodyColor, #cccccc) 60%, transparent) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-size: calc(var(--mainFontSize, 1em) * 0.82);
+    padding: 4px 4px 8px 4px;
+    margin-bottom: 0 !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #cccccc) 12%, transparent);
+}
+
+.character-folders-container .uncategorized-section .folder-header .fa-folder-open {
+    color: color-mix(in srgb, var(--SmartThemeBodyColor, #cccccc) 50%, transparent);
 }
 
 /* Responsive design for narrow screens */
