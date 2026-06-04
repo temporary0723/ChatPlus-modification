@@ -382,14 +382,14 @@ function renderCharacterChatFoldersUI(characterId, container, folderedChats, fol
     
     folderNodes.forEach(folder => {
         const folderSection = document.createElement('div');
-        folderSection.className = 'collapsible-section folder-collapsible-section';
+        folderSection.className = 'collapsible-section folder-collapsible-section collapsed';
         folderSection.style.paddingLeft = level === 0 ? '0' : '28px';
         
         const header = document.createElement('div');
         header.className = 'collapsible-header';
         
         const chevron = document.createElement('i');
-        chevron.className = 'fa-solid chevron fa-chevron-down';
+        chevron.className = 'fa-solid chevron fa-chevron-right';
         header.appendChild(chevron);
         
         const folderTitle = document.createElement('span');
@@ -467,7 +467,7 @@ function renderCharacterChatFoldersUI(characterId, container, folderedChats, fol
         });
         
         const content = document.createElement('div');
-        content.className = 'collapsible-content';
+        content.className = 'collapsible-content collapsed';
         
         folderSection.appendChild(header);
         folderSection.appendChild(content);
@@ -603,9 +603,9 @@ async function showManageFolderChatsModal(characterId, folder) {
         chatName.textContent = chat.file_name.replace('.jsonl', '');
         chatName.style.cssText = `
             font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         `;
         
         const chatMeta = document.createElement('div');
